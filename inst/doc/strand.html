@@ -382,7 +382,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <li>Daily alpha and factor inputs for each stock in the universe.</li>
 <li>Daily market data for each stock in the universe.</li>
 </ol>
-<p><code>strand</code> reads each type of input data from files stored in the language-independent binary <code>feather</code> format. In this vignette we’ll be using a set of (fake) sample data available in <code>strand</code>’s GitHub repository. We assume that <a href="https://github.com/strand-tech/strand/raw/master/sample_data.tar.gz">sample_data.tar.gz</a> has been extracted in the <code>vignettes</code> directory of the package.</p>
+<p>This data can be provided to the simulator directly using objects stored in memory, or the simulator can read the data from binary files stored in feather format on disk. An example of setting up a simulation using in-memory objects as input can be found in the package documentation examples (see <code>?Simulation</code>). In this vignette we’ll be using a set of (fake) sample data, in binary file format, available in <code>strand</code>’s GitHub repository. We assume that <a href="https://github.com/strand-tech/strand/raw/master/sample_data.tar.gz">sample_data.tar.gz</a> has been extracted in the <code>vignettes</code> directory of the package.</p>
 <div id="security-reference" class="section level3">
 <h3>Security reference</h3>
 <p>The security reference specifies static information about each security in the backtest. Security reference data must include at least the following columns:</p>
@@ -421,7 +421,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <p>The <code>/simulator/input_data/directory</code> and <code>/simulator/input_data/prefix</code> configuration options specify where the system should find these inputs. Below is the pertinent section from <code>sample.yaml</code>:</p>
 <pre><code>simulator:
   input_data:
-    file:
+    type: file
     directory: sample_data/inputs
     prefix: inputs</code></pre>
 <p>This entry indicates that inputs files can be found in <code>sample_data/inputs</code>. By convention the data for each day has its own file with file name <code>prefix_YYYYmmdd.feather</code>. Therefore the file <code>inputs_20190715.feather</code> contains the alpha and risk values that will be used for trading on 2019-07-15.</p>
