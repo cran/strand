@@ -7,42 +7,6 @@
 #'   other simulator settings can be configured in a yaml file that is passed to
 #'   the object's constructor. See \code{vignette("strand")} for information on
 #'   configuration file setup.
-#' @examples
-#' 
-#' # Load up sample data
-#' data(sample_secref)
-#' data(sample_pricing)
-#' data(sample_inputs)
-#' 
-#' # Load sample configuration
-#' config <- example_strategy_config()
-#'
-#' # Create the Simulation object and run
-#' sim <- Simulation$new(config,
-#'                       raw_input_data = sample_inputs,
-#'                       raw_pricing_data = sample_pricing,
-#'                       security_reference_data = sample_secref)
-#' sim$run()
-#' 
-#' # Print overall statistics
-#' sim$overallStatsDf()
-#' 
-#' # Access tabular result data
-#' head(sim$getSimSummary())
-#' head(sim$getSimDetail())
-#' head(sim$getPositionSummary())
-#' head(sim$getInputStats())
-#' head(sim$getOptimizationSummary())
-#' head(sim$getExposures())
-#' 
-#' # Plot results
-#' \dontrun{
-#' sim$plotPerformance()
-#' sim$plotMarketValue()
-#' sim$plotCategoryExposure("category_1") 
-#' sim$plotFactorExposure(c("factor_1", "factor_2", "factor_3"))
-#' sim$plotNumPositions()
-#' }
 #' 
 #' @export
 Simulation <- R6Class(
@@ -1189,6 +1153,7 @@ Simulation <- R6Class(
           "Annualized Return on GMV (%)",
           "Annualized Vol (%)",
           "Annualized Sharpe",
+          "Max Drawdown (%)",
           "Avg GMV",
           "Avg NMV",
           "Avg Count",
@@ -1201,6 +1166,7 @@ Simulation <- R6Class(
           sprintf("%0.1f", mean(res$gross_pnl / res$end_gmv) * 100 * 252),
           sprintf("%0.1f", sd(res$gross_pnl / res$end_gmv) * 100 * sqrt(252)),
           sprintf("%0.2f", mean(res$gross_pnl / res$end_gmv) / sd(res$gross_pnl / res$end_gmv) * sqrt(252)),
+          sprintf("%0.1f", drawdown(res$gross_pnl / res$end_gmv) * 100),
           rep("", 5)
         ),
         Net = c(
@@ -1209,6 +1175,7 @@ Simulation <- R6Class(
           sprintf("%0.1f", mean(res$net_pnl / res$end_gmv) * 100 * 252),
           sprintf("%0.1f", sd(res$net_pnl / res$end_gmv) * 100 * sqrt(252)),
           sprintf("%0.2f", mean(res$net_pnl / res$end_gmv) / sd(res$net_pnl / res$end_gmv) * sqrt(252)),
+          sprintf("%0.1f", drawdown(res$net_pnl / res$end_gmv) * 100),
           formatC(mean(res$end_gmv), big.mark = ",", digit = 0, format = "f"),
           formatC(mean(res$end_nmv), big.mark = ",", digit = 0, format = "f"),
           formatC(mean(res$end_num), big.mark = ",", digit = 0, format = "f"),
