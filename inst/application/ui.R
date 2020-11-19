@@ -1,4 +1,8 @@
 library(DT)
+library(plotly)
+library(shinyFiles)
+library(shinyjs)
+
 
 .readYamlConfig <- function() {
   config <- example_strategy_config()
@@ -22,24 +26,44 @@ ui <- fluidPage(
     type = "tabs",
     tabPanel("Configuration",
              br(),
-             column(2,
-                    dateInput("startDate", label = "Start date", value = "2019-01-02",
-                              min = "2019-01-02", max = "2019-03-29",
-                              daysofweekdisabled = c(0,6)),
-                    dateInput("endDate", label = "End date", value = "2019-03-29",
-                              min = "2019-01-02", max = "2019-03-29",
-                              daysofweekdisabled = c(0,6)),
-                    actionButton("runSim", "Run simulation")
+             fluidRow(
+               column(2,
+                      dateInput("startDate", label = "Start date", value = "2020-06-01",
+                                min = "2020-06-01", max = "2020-08-31",
+                                daysofweekdisabled = c(0,6)),
+                      dateInput("endDate", label = "End date", value = "2020-08-31",
+                                min = "2020-06-01", max = "2020-08-31",
+                                daysofweekdisabled = c(0,6)),
+                      actionButton("runSim", "Run simulation")
+               ),
+               column(10,
+                      textAreaInput("config", "Configuration",
+                                    width = "600px",
+                                    height = "400px",
+                                    value = .readYamlConfig()
+                      )
+               )),
+             # added useshinyjs() call
+             useShinyjs(),
+             fluidRow(
+               column(
+                 12,
+                 p(strong("Select your simulation directory and press Load Simulation"))
+               )
              ),
-             column(10,
-                    textAreaInput("config", "Configuration",
-                                  width = "600px",
-                                  height = "400px",
-                                  value = .readYamlConfig()
-                                  )
-             )),
-    tabPanel(
-      "Results",
+             fluidRow(
+               column(2,
+                      shinyDirButton("simDir", "Directory select", "Please select your simulation directory")
+               ),
+               column(10,
+                      textOutput("directory")
+               )),
+             fluidRow(
+               column(2,
+                      br(),
+                      actionButton("loadSim", "Load simulation")
+             ))),
+    tabPanel("Results",
       br(),
       tabsetPanel(
         id = "results",
@@ -56,7 +80,7 @@ ui <- fluidPage(
             column(
               8,
               br(),
-              plotOutput('plot_1')
+              plotlyOutput('plot_1')
             )
           ),
           fluidRow(
@@ -74,7 +98,7 @@ ui <- fluidPage(
             column(
               12,
               br(),
-              plotOutput('plot_2'),
+              plotlyOutput('plot_2'),
               DT::dataTableOutput('marketValueTable')
             )
           )
@@ -85,8 +109,8 @@ ui <- fluidPage(
             column(
               12,
               br(),
-              plotOutput('plot_3'),
-              plotOutput('plot_4')
+              uiOutput('plot_3s'),
+              uiOutput('factor_exposure')
             )
           )
         ),
@@ -96,11 +120,21 @@ ui <- fluidPage(
             column(
               12,
               DT::dataTableOutput('positionSummaryTable'),
-              br(),
-              dateInput("holdingsDate", label = "Date", value = "2019-01-02",
+              br()
+            ),
+          ),
+         # Contains the plot and data table of the selected position
+         uiOutput("selectedPlotAndTable")
+        ),
+        tabPanel(
+          "Holdings by Date",
+          fluidRow(
+            column(
+              12,
+              dateInput("holdingsDate", label = "Date", value = "2020-06-01",
                         daysofweekdisabled = c(0,6)),
               DT::dataTableOutput('holdingsTable')
-            )
+            ) 
           )
         )
       )

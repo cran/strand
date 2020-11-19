@@ -2,7 +2,7 @@
 #' @aliases strand
 #' @docType package
 #' @title strand: a framework for investment strategy simulation
-#' @author Jeff Enos \email{jeff@strand.tech} and David Kane \email{david@strand.tech}
+#' @author Jeff Enos \email{jeffrey.enos@gmail.com} and David Kane \email{dave.kane@gmail.com}
 #' @description
 #' 
 #' The strand package provides a framework for performing discrete (share-level)
@@ -16,15 +16,18 @@
 #' 
 #' @import R6
 #' @import ggplot2
-#' @importFrom dplyr %>% select mutate mutate_at mutate_if filter inner_join left_join vars group_by summarise summarise_all rename contains matches bind_rows ungroup arrange
-#' @importFrom tidyr replace_na starts_with ends_with one_of pivot_longer pivot_wider gather
+#' @importFrom methods is
+#' @importFrom dplyr %>% select mutate mutate_at mutate_if filter inner_join left_join vars group_by summarise summarise_all rename contains matches bind_rows ungroup arrange desc transmute rename_at group_by_at
+#' @importFrom tibble enframe
+#' @importFrom tidyr replace_na starts_with ends_with one_of everything pivot_longer pivot_wider gather unnest unnest_wider
 #' @importFrom Matrix Matrix Diagonal
 #' @importFrom Rglpk Rglpk_solve_LP
 #' @importFrom yaml yaml.load_file
-#' @importFrom rlang .data
-#' @importFrom feather read_feather write_feather
-#' @importFrom lubridate day month day<- month<-
+#' @importFrom rlang .data has_name :=
+#' @importFrom arrow read_feather write_feather
+#' @importFrom lubridate day month year day<- month<-
 #' @importFrom stats cor qnorm sd as.formula residuals lm
+#' @importFrom utils head
 #' 
 #' @examples
 #' # Load up sample data
@@ -35,6 +38,9 @@
 #' # Load sample configuration
 #' config <- example_strategy_config()
 #'
+#' # Override config file end date to run a one-week sim
+#' config$to <- as.Date("2020-06-05")
+#' 
 #' # Create the Simulation object and run
 #' sim <- Simulation$new(config,
 #'                       raw_input_data = sample_inputs,
@@ -57,8 +63,8 @@
 #' \dontrun{
 #' sim$plotPerformance()
 #' sim$plotMarketValue()
-#' sim$plotCategoryExposure("category_1") 
-#' sim$plotFactorExposure(c("factor_1", "factor_2", "factor_3"))
+#' sim$plotCategoryExposure("sector") 
+#' sim$plotFactorExposure(c("value", "size"))
 #' sim$plotNumPositions()
 #' }
 NULL

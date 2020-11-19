@@ -1,30 +1,56 @@
-# Portfolio optimization class
-#
-# @description The \code{PortOpt} object is used to set up and solve a
-#   portfolio optimization problem.
-#
-# @details A \code{PortOpt} object is configured in the same way as a
-#   \code{Simulation} object, by supplying configuration in a yaml file or list
-#   to the object constructor. Methods are available for adding constraints and
-#   retrieving information about the optimization setup and results. See the
-#   package vignette for information on configuration file setup.
-#
-# @export
+#' Portfolio optimization class
+#'
+#' @description The \code{PortOpt} object is used to set up and solve a
+#'   portfolio optimization problem.
+#'
+#' @details A \code{PortOpt} object is configured in the same way as a
+#'   \code{Simulation} object, by supplying configuration in a yaml file or list
+#'   to the object constructor. Methods are available for adding constraints and
+#'   retrieving information about the optimization setup and results. See the
+#'   package vignette for information on configuration file setup.
+#'
+#' @export
 PortOpt <- R6Class(
   "PortOpt",
   public = list(
 
-    # @description Create a new \code{PortOpt} object.
-    # @param config An object of class \code{list} or \code{character}. If the
-    #   value passed is a character vector, it should be of length 1 and
-    #   specify the path to a yaml configuration file that contains the
-    #   object's configuration info. If the value passed is of class list(),
-    #   the list should contain the object's configuration info in list form
-    #   (e.g, the return value of calling \code{yaml.load_file} on the
-    #   configuration file).
-    # @param input_data A \code{data.frame} that contains all necessary input
-    #   for the optimization.
-    # @return A new \code{PortOpt} object.
+    #' @description Create a new \code{PortOpt} object.
+    #' @param config An object of class \code{list} or \code{character}. If the
+    #'   value passed is a character vector, it should be of length 1 and
+    #'   specify the path to a yaml configuration file that contains the
+    #'   object's configuration info. If the value passed is of class list(),
+    #'   the list should contain the object's configuration info in list form
+    #'   (e.g, the return value of calling \code{yaml.load_file} on the
+    #'   configuration file).
+    #' @param input_data A \code{data.frame} that contains all necessary input
+    #'   for the optimization.
+    #'   
+    #'   If the top-level configuration item \code{price_var} is not set, prices will be expected
+    #'   in the \code{ref_price} column of \code{input_data}.
+    #' @return A new \code{PortOpt} object.
+    #' @examples
+    #' library(dplyr)
+    #' data(sample_secref)
+    #' data(sample_inputs)
+    #' data(sample_pricing)
+    #'
+    #' # Construct optimization input for one day from sample data. The columns
+    #' # of the input data must match the input configuration.
+    #' optim_input <-
+    #'   inner_join(sample_inputs, sample_pricing,
+    #'              by = c("id", "date")) %>%
+    #'   left_join(sample_secref, by = "id") %>%
+    #'   filter(date %in% as.Date("2020-06-01")) %>%
+    #'   mutate(ref_price = price_unadj,
+    #'                 shares_strategy_1 = 0)
+    #'
+    #' opt <-
+    #'   PortOpt$new(config = example_strategy_config(),
+    #'               input_data = optim_input)
+    #'
+    #' # The problem is not solved until the \code{solve} method is called
+    #' # explicitly.
+    #' opt$solve()
     initialize = function(config, input_data) {
       
       if (is.character(config)) {
@@ -36,6 +62,10 @@ PortOpt <- R6Class(
         private$config <- config
       } else {
         stop("config must be of class list, character, or StrategyConfig")
+      }
+      
+      if (any(duplicated(input_data$id))) {
+        stop("Only one row per id allowed in input_data")
       }
       
       private$input_data <- input_data
@@ -90,8 +120,10 @@ PortOpt <- R6Class(
       invisible(self)
     },
     
-    # @description Set the verbose flag to control info output.
-    # @param verbose Logical flag indicating whether to be verbose or not.
+    #' @description Set the verbose flag to control the amount of informational
+    #'   output.
+    #' @param verbose Logical flag indicating whether to be verbose or not.
+    #' @return No return value, called for side effects.
     setVerbose = function(verbose) {
       stopifnot(is.logical(verbose),
                 length(verbose) %in% 1)
@@ -99,34 +131,35 @@ PortOpt <- R6Class(
       invisible(self)
     },
     
-    # @description Add optimization constraints.
-    # @param constraint_matrix Matrix with one row per constraint and \eqn{(S+1) \times N}
-    #   columns, where S is number of strategies and N is the number of stocks.
-    #
-    #   The variables in the optimization are
-    #
-    #   \deqn{x_{1,1}, x_{2,1}, \ldots, x_{N,1},}
-    #   \deqn{x_{1,2}, x_{2,2}, \ldots, x_{N,2},}
-    #   \deqn{\vdots}
-    #   \deqn{x_{1,S}, x_{2,S}, \ldots, x_{N,S},}
-    #   \deqn{y_1, \ldots, y_N}
-    #
-    #   The first \eqn{N \times S} variables are the individual strategy
-    #   trades. Variable \eqn{x_{i,s}} represents the signed trade for stock i
-    #   in strategy s. The following N auxillary variables \eqn{y_1, \ldots, y_N}
-    #   represent the absolute value of the net trade in each stock. So
-    #   for a stock i, we have:
-    #
-    #   \deqn{y_i = \sum_s |x_{i,s}|}
-    #
-    # @param dir Vector of class character of length
-    #   \code{nrow(constraint_matrix)} that specifies the direction of the
-    #   constraints. All elements must be one of ">=", "==", or "<=".
-    # @param rhs Vector of class numeric of length
-    #   \code{nrow(constraint_matrix)} that specifies the bounds of the
-    #   constraints.
-    # @param name Character vector of length 1 that specifies a name for the
-    #   set of constraints that are being created.
+    #' @description Add optimization constraints.
+    #' @param constraint_matrix Matrix with one row per constraint and \eqn{(S+1) \times N}
+    #'   columns, where S is number of strategies and N is the number of stocks.
+    #'
+    #'   The variables in the optimization are
+    #'
+    #'   \deqn{x_{1,1}, x_{2,1}, \ldots, x_{N,1},}
+    #'   \deqn{x_{1,2}, x_{2,2}, \ldots, x_{N,2},}
+    #'   \deqn{\vdots}
+    #'   \deqn{x_{1,S}, x_{2,S}, \ldots, x_{N,S},}
+    #'   \deqn{y_1, \ldots, y_N}
+    #'
+    #'   The first \eqn{N \times S} variables are the individual strategy
+    #'   trades. Variable \eqn{x_{i,s}} represents the signed trade for stock i
+    #'   in strategy s. The following N auxillary variables \eqn{y_1, \ldots, y_N}
+    #'   represent the absolute value of the net trade in each stock. So
+    #'   for a stock i, we have:
+    #'
+    #'   \deqn{y_i = \sum_s |x_{i,s}|}
+    #'
+    #' @param dir Vector of class character of length
+    #'   \code{nrow(constraint_matrix)} that specifies the direction of the
+    #'   constraints. All elements must be one of ">=", "==", or "<=".
+    #' @param rhs Vector of class numeric of length
+    #'   \code{nrow(constraint_matrix)} that specifies the bounds of the
+    #'   constraints.
+    #' @param name Character vector of length 1 that specifies a name for the
+    #'   set of constraints that are being created.
+    #' @return No return value, called for side effects.
     addConstraints = function(constraint_matrix, dir, rhs, name) {
       stopifnot(is.matrix(constraint_matrix) ||
                 inherits(constraint_matrix, "Matrix"))
@@ -159,17 +192,17 @@ PortOpt <- R6Class(
       invisible(self)
     },
 
-    # @description Constraint matrix access.
-    # @return The optimization's constraint matrix.
+    #' @description Constraint matrix access.
+    #' @return The optimization's constraint matrix.
     getConstraintMatrix = function() {
       do.call(rbind, lapply(private$constraint_matrices, as, "sparseMatrix"))
     },
     
-    # @description Provide high-level constraint information.
-    # @return A data frame that contains constraint metadata, such as current constraint value and
-    #   whether a constraint is currently within bounds, for all single-row
-    #   constraints. Explicitly exclude net trade constraints and constraints
-    #   that involve net trade variables.
+    #' @description Provide high-level constraint information.
+    #' @return A data frame that contains constraint metadata, such as current constraint value and
+    #'   whether a constraint is currently within bounds, for all single-row
+    #'   constraints. Explicitly exclude net trade constraints and constraints
+    #'   that involve net trade variables.
     getConstraintMeta = function() {
       constr_meta <- data.frame(name = names(private$constraint_matrices),
                                 stringsAsFactors = FALSE)
@@ -178,7 +211,9 @@ PortOpt <- R6Class(
       constr_meta$idx_end <- constr_meta$idx_start + constr_meta$rows - 1
       
       constr_meta <- filter(constr_meta,
-                            !.data$name %in% c("Net trade <=", "Net trade >=", "Turnover limit"))
+                            !.data$name %in% c("Net trade <=", "Net trade >=", "Turnover limit") &
+                            .data$idx_start == .data$idx_end)
+
       stopifnot(isTRUE(all.equal(constr_meta$idx_start, constr_meta$idx_end)))
 
       constr_meta$current_value <-
@@ -201,15 +236,23 @@ PortOpt <- R6Class(
       constr_meta
     },
 
-    # @description Solve the optimization. After running \code{solve()},
-    #   results can be retrieved using \code{getResultData()}.
+    #' @description Solve the optimization. After running \code{solve()},
+    #'   results can be retrieved using \code{getResultData()}.
+    #' @return No return value, called for side effects.
     solve = function() {
       indices <- 1:length(private$objective_function)
       
       solver <- private$config$getConfig("solver")
       res <- NULL
       
-      for (loosen_coef in c(0, 0.5, 0.5, 1)) {
+      loosening_sequence <- private$config$getConfig("loosening_sequence")
+
+      if (is.null(loosening_sequence) ||
+          length(loosening_sequence) %in% 0) {
+        loosening_sequence <- c(0, 0.5, 0.5, 1)
+      }
+      
+      for (loosen_coef in loosening_sequence) {
         
         private$loosen(loosen_coef)
 
@@ -276,17 +319,20 @@ PortOpt <- R6Class(
       }
       
       if (!res$status %in% 0) {
-        if (solver %in% "glpk" && res$status %in% 1 &&
-            length(res$solution) == length(private$objective_function)) {
+        if (solver %in% "glpk" && res$status %in% 1) {
           
           # We have encountered a case where symphony solves the problem and
-          # returns success, but GLPK solves the problem but returns 1. Here a
-          # better approach might be to try an alternate solver as opposed to
-          # checking the length of the solution vector.
+          # returns success, but GLPK solves the problem but returns the status
+          # code for invalid basis. However, in some cases GLPK will return this
+          # status when no solution can be found.
           #
-          # It's not clear why in this situation GLPK thinks the problem has an
-          # invalid basis.
-          warning("Solution found but encountered GLPK return value 1 (GLP_EBADB, invalid basis). Check results")
+          # Suggest trying the symphony solver if we encounter the GLP_EBADB
+          # status code.
+          #
+          # TODO: in this scenario fall back to symphony automatically if that
+          # solver is available.
+          stop(paste0("Encountered GLPK return value 1 (GLP_EBADB, invalid basis). ",
+                      "An alternate solver may be able to find a solution."))
         
         } else {
           stop(paste0("Optimization failed with status code: ", res$status))
@@ -296,10 +342,10 @@ PortOpt <- R6Class(
       invisible(self)
     },
     
-    # @description Get optimization result.
-    # @return A data frame that contains the number of shares and the net
-    #   market value of the trades at the strategy and joint (net) level
-    #   for each stock in the optimization's input.
+    #' @description Get optimization result.
+    #' @return A data frame that contains the number of shares and the net
+    #'   market value of the trades at the strategy and joint (net) level
+    #'   for each stock in the optimization's input.
     getResultData = function() {
       
       if (length(private$solution) %in% 0) {
@@ -346,11 +392,52 @@ PortOpt <- R6Class(
       invisible(res)
     },
     
-    # @description Provide aggregate level optimization information if the
-    #   problem has been solved.
-    # @return A data frame with one row per strategy, including the joint (net)
-    #   level, and columns for starting and ending market values and factor
-    #   expoure values.
+    #' @description Provide information about any constraints that were loosened
+    #'   in order to solve the optimization.
+    #' @return Object of class \code{list} where keys are the names of the
+    #'   loosened constraints and values are how much they were loosened toward
+    #'   current values. Values are expressed as (current constraint value -
+    #'   loosened constraint value) / (current constraint value - violated
+    #'   constraint value). A value of 0 means a constraint was loosened 100\%
+    #'   and is not binding.
+    getLoosenedConstraints = function() {
+      private$loosened_constraints
+    },
+    
+    #' @description Provide information about the maximum position size allowed
+    #'   for long and short positions.
+    #' @return An object of class \code{data.frame} that contains the limits on
+    #'   size for long and short positions for each strategy and security. The
+    #'   columns in the data frame are:
+    #'   \describe{
+    #'     \item{id}{Security identifier.}
+    #'     \item{strategy}{Strategy name.}
+    #'     \item{max_pos_lmv}{Maximum net market value for a long position.}
+    #'     \item{max_pos_smv}{Maximum net market value for a short position.}
+    #'     }
+    getMaxPosition = function() {
+      private$max_position
+    },
+    
+    #' @description Provide information about the maximum order size allowed
+    #'   for each security and strategy.
+    #' @return An object of class \code{data.frame} that contains the limit on
+    #'   order size for each strategy and security. The
+    #'   columns in the data frame are:
+    #'   \describe{
+    #'     \item{id}{Security identifier.}
+    #'     \item{strategy}{Strategy name.}
+    #'     \item{max_order_gmv}{Maximum gross market value allowed for an order.}
+    #'     }
+    getMaxOrder = function() {
+      private$max_order
+    },
+    
+    #' @description Provide aggregate level optimization information if the
+    #'   problem has been solved.
+    #' @return A data frame with one row per strategy, including the joint (net)
+    #'   level, and columns for starting and ending market values and factor
+    #'   expoure values.
     summaryDf = function() {
       
       # TODO Provide pre-solution output.
@@ -361,9 +448,13 @@ PortOpt <- R6Class(
       price_var <- private$config$getConfig("price_var")
       all_strategies <- private$config$getStrategyNames()
 
-      # Grab a list of all numeric factors used in constraints.
+      # Grab a list of all numeric columns used as in_vars and in constraints.
       factor_vars <- c()
       for (strategy in all_strategies) {
+        
+        this_in_var <- private$config$getStrategyConfig(strategy, "in_var")
+        factor_vars <- c(factor_vars, this_in_var)
+        
         constraint_config <- private$config$getStrategyConfig(strategy, "constraints")
         factor_vars <- c(factor_vars,
                          sapply(constraint_config, function(x) {
@@ -436,7 +527,8 @@ PortOpt <- R6Class(
       res[order(match(res$strategy, c(all_strategies, "joint"))),] %>% data.frame
     },
     
-    # @description Print summary information. 
+    #' @description Print summary information. 
+    #' @return No return value, called for side effects.
     print = function() {
       # TODO Improve this print method.
       if (is.null(private$solution)) {
@@ -477,6 +569,9 @@ PortOpt <- R6Class(
       
       input_data = NULL,
       
+      max_position = NULL,
+      max_order = NULL,
+      
       verbose = FALSE,
       
       setTargetWeight = function(strategy, long, short) {
@@ -504,11 +599,17 @@ PortOpt <- R6Class(
       validateInputData = function() {
         
         # Checks need to be expanded
-        stopifnot(all(c("id",
-                        "investable",
-                        private$config$getConfig("vol_var"),
-                        private$config$getConfig("price_var")) %in%
-                        names(private$input_data)))
+        required_columns <- c("id",
+                              "investable",
+                              private$config$getConfig("vol_var"),
+                              private$config$getConfig("price_var"))
+        
+        missing_columns <- required_columns[!required_columns %in%
+                                              names(private$input_data)]
+        if (length(missing_columns) > 0) {
+          stop(paste0("Must have the following columns in input_data: ",
+                      paste0(missing_columns, collapse = ", ")))
+        }
         
         stopifnot(all(!is.na(private$input_data$id)),
                   sum(duplicated(private$id)) %in% 0)
@@ -664,22 +765,46 @@ PortOpt <- R6Class(
           current_short_weight <- abs(current_smv / strategy_capital)
           
           target_weight_policy <- private$config$getConfig("target_weight_policy")
+
           if (isTRUE(all.equal(target_weight_policy, "half-way"))) {
             
             # If there is a target_weight_policy of 'half-way' (trade half-way to
             # the ideal weight) set in the config file, set the target long/short
             # weight for this strategy accordingly.
-            private$setTargetWeight(strategy,
-                                    (ideal_long_weight - current_long_weight) * 0.5 + current_long_weight,
-                                    (ideal_short_weight - current_short_weight) * 0.5 + current_short_weight)
-            
+            long_weight_change <- (ideal_long_weight - current_long_weight) * 0.5
+            short_weight_change <- (ideal_short_weight - current_short_weight) * 0.5
+
           } else if (is.null(target_weight_policy) || isTRUE(all.equal(target_weight_policy, "full"))) {
-            private$setTargetWeight(strategy,
-                                    ideal_long_weight,
-                                    ideal_short_weight)
+            long_weight_change <- ideal_long_weight - current_long_weight
+            short_weight_change <- ideal_short_weight - current_short_weight
           } else {
             stop(paste0("Invalid target_weight_policy: ", target_weight_policy))
           }
+          
+          # Limit weight change on each side if the simulator/max_weight_change
+          # configuration parameter is set. max_weight_change is expressed as a
+          # fraction of the ideal long and short weight. It imposes a limit on
+          # the absolute value of the change of the portfolio's long and short
+          # weight in the optimization.
+          #
+          # For example, if the ideal long weight is 1, the current weight is 0,
+          # and max_weight_change is 0.1, then the target long weight can be at
+          # most 0.1.
+          max_weight_change <- private$config$getConfig("max_weight_change")
+          if (!is.null(max_weight_change)) {
+            stopifnot(is.numeric(max_weight_change))
+            
+            long_weight_change <-
+              sign(long_weight_change) * min(abs(long_weight_change),
+                                             max_weight_change * ideal_long_weight)
+            short_weight_change <-
+              sign(short_weight_change) * min(abs(short_weight_change),
+                                             max_weight_change * ideal_short_weight)
+          }
+          
+          private$setTargetWeight(strategy,
+                                  current_long_weight + long_weight_change,
+                                  current_short_weight + short_weight_change)
         }
         
         invisible(self)
@@ -759,11 +884,20 @@ PortOpt <- R6Class(
           
           trading_limit_pct_adv <- private$config$getStrategyConfig(strategy, "trading_limit_pct_adv")
           
-          # Calculate per-stock trading limit by multiplying the percentage volume
-          # limit by anticipated average trading volume.
-          trading_limit <- private$input_data[[price_var]] * 
-            private$input_data[[vol_var]] * trading_limit_pct_adv / 100
+          # Calculate per-stock trading limit by multiplying the percentage
+          # volume limit by anticipated average trading volume.
+          trading_limit <- private$input_data[[vol_var]] * trading_limit_pct_adv / 100
           
+          # Save this per-stock trading limit to the max_order member.
+          private$max_order <- rbind(
+            private$max_order,
+            data.frame(
+              strategy = strategy,
+              id = private$input_data$id,
+              max_order_gmv = trading_limit,
+              stringsAsFactors = FALSE)
+          )
+
           # Should have a config method that returns the starting shares column
           # for a given strategy (or even a method that returns a vector of
           # position nmvs).
@@ -790,15 +924,28 @@ PortOpt <- R6Class(
           
           # pos_upper_limit is the higest (signed) market value allowed based on position
           # limit configuration.
-          pos_upper_limit <- pmin(private$input_data[[price_var]] * private$input_data[[vol_var]] * position_limit_pct_adv / 100,
+          pos_upper_limit <- pmin(private$input_data[[vol_var]] * position_limit_pct_adv / 100,
                                   ideal_lmv * position_limit_pct_lmv / 100)
           
           # pos_lower_limit is the lowest (signed) market value allowed based on
           # position limit configuration.
           pos_lower_limit <- -1 * 
-            pmin(private$input_data[[price_var]] * private$input_data[[vol_var]] * position_limit_pct_adv / 100,
+            pmin(private$input_data[[vol_var]] * position_limit_pct_adv / 100,
                  ideal_smv * position_limit_pct_smv / 100)
-          
+
+          # Save the max position size based on position limit information in
+          # the object. These values can be accessed using the getMaxPosition
+          # method.
+          private$max_position <- rbind(
+            private$max_position,
+            data.frame(
+              strategy = strategy,
+              id = private$input_data$id,
+              max_pos_lmv = pos_upper_limit,
+              max_pos_smv = pos_lower_limit,
+              stringsAsFactors = FALSE)
+            )
+
           # Set pos_upper_limit and pos_lower_limit to zero for stocks that are
           # not investable
           pos_upper_limit[!private$input_data$investable] <- 0
@@ -850,7 +997,30 @@ PortOpt <- R6Class(
                                         rep(Inf, nrow(private$input_data)))
         private$variable_bounds$lower <- c(private$variable_bounds$lower,
                                         rep(0, nrow(private$input_data)))
-        
+
+        # Finish bookkeeping for max_position and max_order data by adding
+        # values for the joint level. When we add joint position and trading
+        # limits as constraints this section will no longer be needed.
+        private$max_position <-
+          rbind(
+            private$max_position,
+            private$max_position %>%
+              mutate(strategy = "joint") %>%
+              group_by(strategy, id) %>%
+              summarise(max_pos_lmv = sum(max_pos_lmv),
+                        max_pos_smv = sum(max_pos_smv)) %>%
+              ungroup())
+
+        private$max_order <-
+          rbind(
+            private$max_order,
+            private$max_order %>%
+              mutate(strategy = "joint") %>%
+              group_by(strategy, id) %>%
+              summarise(max_order_gmv = sum(max_order_gmv)) %>%
+              ungroup())
+
+            
         invisible(self)
       },
       
@@ -1088,7 +1258,7 @@ PortOpt <- R6Class(
         
         out_of_bounds <- filter(self$getConstraintMeta(),
                                 !.data$name %in% mkt_value_constr_names &
-                                  !.data$within_bounds)
+                                !.data$within_bounds)
         
         # For each constraint, set the constraint bound (rhs value) to be X%
         # closer to 0 where X = loosen_coef.

@@ -27,9 +27,13 @@ Simulation <- R6Class(
     #'   which results will be loaded with \code{readFeather}.
     #' @param raw_input_data A data frame that contains all of the input data
     #'   (for all periods) for the simulation. The data frame must have a
-    #'   \code{date} column. Data supplied using this parameter will only be
+    #'   \code{date} column. Data supplied using this parameter will be
     #'   used if the configuration option \code{simulator/input_data/type} is
     #'   set to \code{object}. Defaults to \code{NULL}.
+    #' @param input_dates Vector of class \code{Date} that specifies  when input
+    #'   data should be updated. If data is being supplied using the
+    #'   \code{raw_input_data} parameter, then \code{input_dates} defaults to
+    #'   set of dates present in this data.
     #' @param raw_pricing_data A data frame that contains all of the input data
     #'   (for all periods) for the simulation. The data frame must have a
     #'   \code{date} column. Data supplied using this parameter will only be
@@ -43,22 +47,33 @@ Simulation <- R6Class(
     #'   will only be used if the configuration option
     #'   \code{simulator/secref_data/type} is set to \code{object}. Defaults to
     #'   \code{NULL}.
-    #' @param delisting_dates_data A data frame that contains the dates on which
-    #'   securities are delisted. It must contain two columns: id (character)
-    #'   and delisting_date (Date). The date in the delisting_date column means
-    #'   the day on which a stock will be removed from the simulation portfolio,
-    #'   at the beginning of the day, due to delisting. Data supplied using this
-    #'   parameter will only be used if the configuration option
-    #'   \code{simulator/delisting_data/type} is set to \code{object}. Defaults to
-    #'   \code{NULL}.
+    #' @param delisting_data A data frame that contains delisting dates and
+    #'   associated returns. It must contain three columns: id (character),
+    #'   delisting_date (Date), and delisting_return (numeric). The date in the
+    #'   delisting_date column means the day on which a stock will be removed
+    #'   from the simulation portfolio. It is typically the day after the last
+    #'   day of trading. The delisting_return column reflects what, if any, P&L
+    #'   should be recorded on the delisting date. A delisting_return of -1
+    #'   means that the shares were deemed worthless. The delisting return is
+    #'   multiplied by the starting net market value of the position to
+    #'   determine P&L for the delisted position on the delisting date. Note
+    #'   that the portfolio optimization does not include stocks that are being
+    #'   removed due to delisting. Data supplied using this parameter will only
+    #'   be used if the configuration option
+    #'   \code{simulator/delisting_data/type} is set to \code{object}. Defaults
+    #'   to \code{NULL}.
     #' @return A new \code{Simulation} object.
     initialize = function(config = NULL,
                           raw_input_data = NULL,
+                          input_dates = NULL,
                           raw_pricing_data = NULL,
                           security_reference_data = NULL,
-                          delisting_dates_data = NULL) {
+                          delisting_data = NULL) {
       
       if (is.character(config)) {
+        if (!file.exists(config)) {
+          stop(paste0("Config file not found: ", config))
+        }
         config <- yaml.load_file(config)
         private$config <- StrategyConfig$new(config)
       } else if (is.list(config)) {
@@ -86,16 +101,18 @@ Simulation <- R6Class(
         stop(paste0("Invalid config value for secref_config/type: ", secref_config$type))
       }
 
-      # Set delisting_dates field. Delisting dates are not required. If no
-      # delisting_data field is present in the config, set the delisting_dates
-      # field to an empty data frame with the appropriate columns.
+      # Set delisting_data field. Delisting data is not required. If no
+      # delisting_data parameter is specified in the config, set the
+      # delisting_data field to an empty data frame with the appropriate
+      # columns.
       #
-      # TODO Pull setup logic for secref and delisting dates into helper
+      # TODO Pull setup logic for secref and delisting data into helper
       # methods.
       delistings_config <- private$config$getConfig("simulator")$delisting_data
       if (is.null(delistings_config)) {
-        private$delisting_dates <- data.frame(id = character(0),
-                                              delisting_date = structure(numeric(0), class = "Date"))
+        private$delisting_data <- data.frame(id = character(0),
+                                              delisting_date = structure(numeric(0), class = "Date"),
+                                              delisting_return = numeric(0))
       } else {
       
         stopifnot(!is.null(delistings_config$type),
@@ -103,9 +120,9 @@ Simulation <- R6Class(
                   is.character(delistings_config$type))
         
         if (delistings_config$type %in% "file") {
-          private$delisting_dates <- read_feather(delistings_config$filename)
+          private$delisting_data <- read_feather(delistings_config$filename)
         } else if (delistings_config$type %in% "object") {
-          private$delisting_dates <- delisting_dates_data
+          private$delisting_data <- delisting_data
         } else {
           stop(paste0("Invalid config value for delistings_config/type: ", delistings_config$type))
         }
@@ -114,17 +131,38 @@ Simulation <- R6Class(
       # Set raw data from constuctor parameters.
       
       if (!is.null(raw_input_data)) {
+        if (private$config$getConfig("simulator")$input_data$type %in% "file") {
+          stop("Passing data via raw_input_data but configuration specifies file-based inputs")
+        }
         stopifnot("date" %in% names(raw_input_data))
         private$raw_input_data <- raw_input_data
+      } else {
+        if (private$config$getConfig("simulator")$input_data$type %in% "object") {
+          stop("raw_input_data is NULL but configuration specifies object-based inputs")
+        }
       }
       
       if (!is.null(raw_pricing_data)) {
+        if (private$config$getConfig("simulator")$pricing_data$type %in% "file") {
+          stop("Passing data via raw_pricing_data but configuration specifies file-based inputs")
+        }
         stopifnot("date" %in% names(raw_pricing_data))
         private$raw_pricing_data <- raw_pricing_data
+      } else {
+        if (private$config$getConfig("simulator")$pricing_data$type %in% "object") {
+          stop("raw_pricing_data is NULL but configuration specifies object-based inputs")
+        }
       }
       
       if (isTRUE(private$config$getConfig("simulator")$verbose)) {
         private$verbose <- TRUE
+      }
+      
+      # Set dates
+      if (is.null(input_dates) & !is.null(raw_input_data)) {
+        private$input_dates <- unique(sort(raw_input_data$date))
+      } else {
+        private$input_dates <- input_dates
       }
       
       invisible(self)
@@ -226,7 +264,7 @@ Simulation <- R6Class(
       for (current_date in as.list(all_dates)) {
 
         if (isTRUE(private$verbose)) {
-          cat("Working on ", format(current_date), "\n", sep = "")
+          cat("[", private$config$getConfig("name"), "] Working on ", format(current_date), "\n", sep = "")
         }
         
         if (is.function(private$shiny_callback)) {
@@ -240,12 +278,25 @@ Simulation <- R6Class(
         # example, columns of the form shares_{strategy name} will collide with
         # the simulator's work columns. There are other ways around this issue
         # but imposing column restrictions is the easiest.
-        input_data <- input_data_obj$get(current_date)
-        pricing_data <- pricing_data_obj$get(current_date)
-      
-        if (!is.null(simulator_config$input_data$track_metadata)) {}
-          input_stats <- input_data_obj$periodStats(simulator_config$input_data$track_metadata)
-          private$saveInputStats(current_date, input_stats)
+        
+        if (!is.null(private$input_dates) && !current_date %in% private$input_dates) {
+          input_data <- input_data_obj$getCurrent()
+        } else {
+          input_data <- input_data_obj$update(current_date)
+          
+          # Collect metadata as specified in the config (such as correlation of
+          # values from one period to the next).
+          if (!is.null(simulator_config$input_data$track_metadata)) {
+            input_stats <- input_data_obj$periodStats(simulator_config$input_data$track_metadata)
+            private$saveInputStats(current_date, input_stats)
+          }
+        }
+        
+        if (nrow(input_data) %in% 0) {
+          stop("Cannot formulate optimization: no input data found")  
+        }
+
+        pricing_data <- pricing_data_obj$update(current_date)
 
         # Properties we enforce on input data:
         #
@@ -264,14 +315,26 @@ Simulation <- R6Class(
           all(portfolio$getPositions()$id %in% input_data$id)
         )
         
-        if (!isTRUE(simulator_config$inputs_without_pricing %in% "omit")) {
-          if (!all(input_data$id %in% pricing_data$id)) {
-            stop("Inputs found without pricing data. Consider setting simulator/inputs_without_pricing=omit")
+        if (!all(input_data$id %in% pricing_data$id)) {
+          if (!isTRUE(simulator_config$inputs_without_pricing %in% "omit")) {
+            stop(paste0("Input records (",
+                        sum(!input_data$id %in% pricing_data$id),
+                        ") found without pricing data. Consider setting simulator/inputs_without_pricing=omit"))
+          } else {
+            if (isTRUE(private$verbose)) {
+              cat("Omitting ",
+                  sum(!input_data$id %in% pricing_data$id),
+                  " input records without pricing data: ",
+                  paste0(input_data$id[!input_data$id %in% pricing_data$id], collapse = ", "),
+                  "\n")
+            }
+            input_data <- filter(input_data, .data$id %in% pricing_data$id)
           }
-        } else {
-          input_data <- filter(input_data, id %in% pricing_data$id)
-        }
-
+        } 
+        
+        input_data <- input_data %>%
+          rename(inputs_carry_forward = carry_forward)
+        
         pricing_data <- pricing_data %>%
           select("id",
                  "close_price", "prior_close_price",
@@ -315,29 +378,38 @@ Simulation <- R6Class(
           select(pricing_data, "id", "adjustment_ratio"))
 
         # Process delistings
-        if (isTRUE(simulator_config$delisting_policy %in% "remove")) {
-          
-          # TODO For delisted stocks we can go back to our data interfaces and
-          # ensure data for them is not carried back after the delisting date.
-          # For now we remove any position on the delisting date and prevent
-          # further entry by (later in this method) setting the investable flag
-          # to FALSE for all delisted securities.
-          
-          # We could save time and use equality on current_date here, but we run
-          # the risk of having dead securities in the portfolio.
-          id_delisted <- private$delisting_dates$id[private$delisting_dates$delisting_date <= current_date]
-          pos_delisted <- portfolio$getPositions() %>% filter(.data$id %in% id_delisted &
-                                                                (.data$int_shares != 0 | .data$ext_shares != 0))
-          pos_delisted <- pos_delisted %>% left_join(select(pricing_data, "id", "start_price"), by = "id")
-          
-          if (nrow(pos_delisted) > 0) {
-            # Record delisting info
-            private$saveDelistings(current_date, pos_delisted)
-            # Remove from portfolio
-            portfolio$removePositions(pos_delisted$id)
-          }
-        } else {
-          id_delisted <- c()
+        
+        # Delistings are handled in the following way:
+        #
+        # 1. All securities that have a delisting date that is equal to or
+        # earlier than current_date are recorded in the id_delisted vector.
+        # These stocks are marked not investable.
+        #
+        # 2. Positions in delisted stocks are recorded in the pos_delisted data
+        # frame. They are omitted from the day's portfolio optimization.
+        #
+        # 3. "Delisting trades" are added as part of the EOD bookkeeping
+        # sequence so that positions in delisted stocks are flattened. In the
+        # day's detail data, the logical column 'delisting' indicates that the
+        # trade was due to a delisting.
+        #
+        # TODO For delisted stocks we can go back to our data interfaces and
+        # ensure data for them is not carried forward after the delisting date.
+        # This will decrease the size of our inputs by omitting securities we
+        # know we will never trade again.
+        
+        # We could save time and use equality on current_date here, but we run
+        # the risk of having dead securities in the portfolio.
+        id_delisted <- private$delisting_data$id[private$delisting_data$delisting_date <= current_date]
+        pos_delisted <- portfolio$getPositions() %>% filter(.data$id %in% id_delisted &
+                                                            (.data$int_shares != 0 | .data$ext_shares != 0))
+        pos_delisted <- pos_delisted %>%
+          left_join(select(pricing_data, "id", "start_price"), by = "id") %>%
+          left_join(private$delisting_data, by = "id")
+        
+        if (nrow(pos_delisted) > 0) {
+          # Record delisting info
+          private$saveDelistings(current_date, pos_delisted)
         }
         
         # Merge together consolidated, wide format positions, pricing data,
@@ -366,11 +438,12 @@ Simulation <- R6Class(
           left_join(private$security_reference,
                     by = "id") %>%
           mutate(ref_price = .data$start_price,
-                 investable = TRUE) %>%
+                 investable = TRUE,
+                 delisting = .data$id %in% pos_delisted$id) %>%
           mutate_at(.vars = vars(portfolio$getShareColumns()),
                     .funs = ~ replace_na(., 0))
-        
-        
+          
+          
         # Set investable flag based on
         #
         # 1. Delisting status
@@ -380,6 +453,33 @@ Simulation <- R6Class(
         # delistings in the simulator, but each strategy should be able to have
         # its own universe.
         input_data$investable <- !input_data$id %in% id_delisted
+        
+        # By default, presence in the latest set of input data affects
+        # investability: stocks that are not in the latest update are not
+        # investable. This makes it easy to define the investable universe
+        # simply as the stocks present in the input cross-section.
+        #
+        # This behavior may not always be desirable, and can be controlled by
+        # setting the simulator/inputs_define_universe configuration option to
+        # FALSE. For example, a user may want to pass in updated factor data for
+        # stocks that are no longer in the universe but may be in the portfolio.
+        #
+        # Note that simulator/inputs_define_universe = TRUE is the same as
+        # having the expression `!inputs_carry_forward` as part of the
+        # simulator/universe configuration parameter.
+        #
+        # Note also that any expression in simulator/universe will be applied
+        # regardless of the setting of simulator/inputs_define_universe.
+        
+        # TODO We need to validate config entries and set defaults in the
+        # StrategyConfig class.
+        inputs_define_universe <- simulator_config$inputs_define_universe
+        stopifnot(is.null(inputs_define_universe) || is.logical(inputs_define_universe))
+
+        if (is.null(inputs_define_universe) || isTRUE(inputs_define_universe)) {
+          input_data$investable <- input_data$investable & !input_data$inputs_carry_forward
+        }
+        
         if (!is.null(simulator_config$universe) && length(simulator_config$universe) > 0) {
           univ <- eval(rlang::parse_expr(simulator_config$universe), envir = input_data)
           if (any(is.na(univ))) {
@@ -387,40 +487,318 @@ Simulation <- R6Class(
           }
           input_data$investable <- input_data$investable & univ
         }
+  
+        # Normalization of input variables and risk factors.
         
-        # Perform normalization, if necessary. Here we normalize the entire
-        # vector, but we should consider, especially in the case of a signal
-        # vector, how we are treating values for stocks not in the universe,
-        # stocks for which data has been carried forward, delisted stocks, etc.
-        if (!is.null(simulator_config$normalize_vars)) {
-          for (normalize_var in simulator_config$normalize_vars) {
-            input_data[[normalize_var]] <- normalize(input_data[[normalize_var]])
+        # Perform normalization for variables listed in
+        # simulator/normalize_in_vars.
+        #
+        # The procedure is as follows:
+        #
+        # 1. Set variable values for non-investable securities to NA.
+        # 2. Normalize variable to N(0, 1).
+        # 3. Replace NAs created in step 1 with 0.
+        #
+        # Store raw (pre-normalized) values for column foo in the detail dataset
+        # column foo_raw.
+        if (!is.null(simulator_config$normalize_in_vars)) {
+          for (normalize_var in simulator_config$normalize_in_vars) {
+            raw_normalize_var <- paste0(normalize_var, "_raw")
+            input_data <- input_data %>%
+              mutate(
+                !! raw_normalize_var := get(normalize_var),
+                !! normalize_var := replace_na(normalize(ifelse(investable, get(normalize_var), NA)), 0))
           }
         }
-        
+
+        # Perform normalization for variables listed in
+        # simulator/normalize_factor_vars.
+        #
+        # factor_vars (variables used in constraint calculations) are normalized
+        # as follows:
+        #
+        # 1. Set variable values for non-investable securities *in which there
+        # is no position* to NA.
+        # 2. Normalize variable to N(0, 1).
+        # 3. Replace NAs created in step 1 with 0.
+        #
+        # The idea is that in_var values should be 0 for stocks that are
+        # non-investable to encourage exiting, while factor_vars for positions
+        # in such stocks should be preserved so that accurate exposures can be
+        # calculated.
+        if (!is.null(simulator_config$normalize_factor_vars)) {
+          for (normalize_var in simulator_config$normalize_factor_vars) {
+            raw_normalize_var <- paste0(normalize_var, "_raw")
+            # Preserve factor_var value if there is a position in any strategy.
+            non_zero_pos <- rowSums(abs(input_data[portfolio$getShareColumns()])) != 0
+            input_data <- input_data %>%
+              mutate(
+                !! raw_normalize_var := get(normalize_var),
+                !! normalize_var := replace_na(normalize(ifelse(investable | non_zero_pos, get(normalize_var), NA)), 0))
+          }
+        }
+
         stopifnot(!any(is.na(input_data)))
+
+        # Make a copy of input_data to pass to the PortOpt class. We do this to
+        # accomodate delistings, which will be removed from the portfolio later
+        # in the process, and which should not contribute to the current day's
+        # constraint calculations.
+
+        opt_input <- input_data
+
+        if(nrow(pos_delisted) > 0) {
+          
+          # Omit positions in stocks that will be exited due to delisting from the
+          # optimization. Do this by setting their current share levels to 0 in
+          # the optimization's input data.
+
+          opt_input <- opt_input %>%
+            mutate_at(.vars = portfolio$getShareColumns(),
+                      .funs = ~ replace(., delisting, 0))
+        }
         
         # Create problem and solve
-        portOpt <- PortOpt$new(private$config, input_data)
+        portOpt <- PortOpt$new(private$config, opt_input)
         portOpt$solve()
         
         # Record information on loosened constraints
-        if (length(portOpt$loosened_constraints) > 0) {
+        if (length(portOpt$getLoosenedConstraints()) > 0) {
+          
           loosened_df <- data.frame(date = current_date,
-                                    constraint_name = names(portOpt$loosened_constraints),
-                                    pct_loosened = 100 * (1 - as.vector(unlist(portOpt$loosened_constraints))))
+                                    constraint_name = names(portOpt$getLoosenedConstraints()),
+                                    pct_loosened = 100 * (1 - as.vector(unlist(portOpt$getLoosenedConstraints()))))
           private$saveLooseningInfo(current_date, loosened_df)
         }
-        
+
         orders <- portOpt$getResultData() %>%
           select("id", contains("shares"))
         
-        # Joint result data back to the inputs data that was passed to the
-        # optimization.
+        # Handle positions that have grown too large.
+        #
+        # After the optimization has generated orders, if the force_trim_factor
+        # is set, add orders to trim positions that are too large.
+        #
+        # A force_trim_factor value of X means "if a position grows larger than
+        # X times its max position size, force a trade to trim the position back
+        # to X times its max position size."
+        #
+        # So if a security has a max long position size of 10,000, its current
+        # size is 15,000, and force_trim_factor = 1.2, we add a trade to sell
+        # 3,000 so that the post-trade position size is 1.2 times max position
+        # size = 12,000.
+        #
+        # TODO Trim positions in PortOpt as part of the optimization process
+        # (when setting variable limits). We will still want the ability to force
+        # trim positions, however, since these limits will also be subject to
+        # loosening when no solution can be found.
+        if (!is.null(simulator_config$force_trim_factor)) {
+
+          force_trim_factor <- simulator_config$force_trim_factor
+          stopifnot(is.numeric(force_trim_factor),
+                    force_trim_factor >= 1)
+          
+          vol_var <- private$config$getConfig("vol_var")
+          too_big <- input_data %>%
+            filter(!delisting) %>%
+            select("id", !!vol_var, "start_price",
+                   !!portfolio$getShareColumns()) %>%
+            pivot_longer(cols = portfolio$getShareColumns(),
+                         names_to = "strategy",
+                         names_prefix = "shares_",
+                         values_to = "shares") %>%
+            left_join(portOpt$getMaxPosition(), by = c("id", "strategy")) %>%
+            mutate(pos_nmv = shares * start_price,
+                   max_pos_trim = ifelse(shares > 0, max_pos_lmv, max_pos_smv) *
+                     force_trim_factor) %>%
+            
+            # Grab those positions that are above the market value trim
+            # threshold.
+            filter(abs(shares * start_price) > abs(max_pos_trim)) %>%
+            
+            # Compute how much can be trimmed
+            left_join(portOpt$getMaxOrder(), by = c("id", "strategy")) %>%
+            mutate(
+              
+              # trim_gmv is the lesser of the amount required to trade the
+              # position down to max_pos_trim and the maximum order size.
+              trim_gmv = pmin(abs(pos_nmv) - abs(max_pos_trim), max_order_gmv),
+              
+              force_order_shares = -1 * sign(shares) * floor(trim_gmv / start_price)) %>%
+            
+            # Filter out cases where we are less than 1 share away from the
+            # max
+            filter(force_order_shares != 0) %>%
+            select("id", "strategy", "force_order_shares")
+
+          if (nrow(too_big) > 0) {
+            
+            # The orders records (in wide format) for the securities in the
+            # too_big data frame need to be reconstructed. This is more involved
+            # because there can be N strategies and M != N strategies that have
+            # positions over the limit.
+            #
+            # It may be more straightforward to do the entire force-trim process
+            # in a loop where we work on the columns for the strategies' orders
+            # one at a time, then recalculate the joint-level order.
+            
+            revised_orders <- orders %>%
+              filter(id %in% too_big$id) %>%
+              pivot_longer(cols = paste0("order_", c("shares_joint", portfolio$getShareColumns())),
+                           names_to = "strategy",
+                           names_prefix = "order_shares_",
+                           values_to = "order_shares") %>%
+              filter(strategy != "joint") %>%
+              
+              # Left join with data frame that contains force orders
+              left_join(too_big, by = c("id", "strategy")) %>%
+              
+              # Revise order_shares if it is smaller than force_order_shares.
+              #
+              # Also record whether the signs of order_shares and
+              # force_order_shares are different. If they are, then the original
+              # order would represent an increase in the size of the position.
+              
+              mutate(sign_mismatch = sign(force_order_shares) * sign(order_shares) < 0,
+                     order_shares = ifelse(!is.na(force_order_shares) &
+                                              abs(order_shares) < abs(force_order_shares),
+                                           force_order_shares,
+                                           order_shares))
+            
+            stopifnot(!any(revised_orders$sign_mismatch, na.rm = TRUE))
+            
+            revised_orders <- revised_orders %>% select(id, strategy, order_shares)
+            
+            # Calculate joint level shares.
+            joint_level <- revised_orders %>%
+              group_by(id) %>%
+              summarise(
+                strategy = "joint",
+                order_shares = sum(order_shares))
+            
+            revised_orders <- rbind(revised_orders, joint_level)
+            
+            # Now pivot back to wide format
+            revised_orders <- revised_orders %>%
+              pivot_wider(names_from = "strategy",
+                          values_from = "order_shares",
+                          names_prefix = "order_shares_")
+            
+            # Adjust column order to match data frame 'orders'
+            revised_orders <- revised_orders[names(orders)]
+            
+            # Finally: remove orders generated by the optimization (if any) and
+            # add the force-exit orders.
+            orders <- filter(orders, !.data$id %in% revised_orders$id)
+            orders <- rbind(orders, revised_orders)
+          }
+        }
+        
+        # Handle non-investable securities.
+        #
+        # Often due to a changing universe the portfolio will have positions in
+        # stocks that are not part of the investable universe. Setting the
+        # simulator/force_exit_non_investable configuration parameter controls
+        # how these positions are handled. If the
+        # simulator/force_exit_non_investable parameter is not set, such
+        # positions are allowed in the portfolio (but increasing their size is
+        # prohibited in the optimization).
+        #
+        # TODO Exit non-investable positions in PortOpt as part of the
+        # optimization process (when setting variable limits). Like position
+        # trimming, we will still want the ability to force exit these
+        # positions, since these limits will also be subject to loosening when
+        # no solution can be found.
+        #
+        # TODO Refactor force-trimming above and force-exiting below to remove
+        # duplicated code.
+        if (isTRUE(simulator_config$force_exit_non_investable)) {
+          
+          vol_var <- private$config$getConfig("vol_var")
+          non_investable <- input_data %>%
+            filter(!investable & ! delisting) %>%
+            select("id", !!vol_var, start_price, !!portfolio$getShareColumns()) %>%
+            pivot_longer(cols = portfolio$getShareColumns(),
+                         names_to = "strategy",
+                         names_prefix = "shares_",
+                         values_to = "shares") %>%
+            filter(shares != 0)
+          
+          if (nrow(non_investable) > 0) {
+
+            # Call floor on abs share value to round toward zero (to avoid
+            # over-sizing in corner cases).
+            non_investable <- non_investable %>%
+              left_join(portOpt$getMaxOrder(), by = c("id", "strategy")) %>%
+              mutate(
+                pos_nmv = shares * start_price,
+                exit_gmv = pmin(abs(pos_nmv), max_order_gmv),
+                order_shares = -1 * sign(shares) * floor(exit_gmv / start_price)) %>%
+              select("id", "strategy", "order_shares")
+            
+            # Calculate joint level shares.
+            joint_level <- non_investable %>%
+              group_by(id) %>%
+              summarise(
+                strategy = "joint",
+                order_shares = sum(order_shares))
+            
+            non_investable <- rbind(non_investable, joint_level)
+            
+            # Now pivot back to wide format
+            non_investable <- non_investable %>%
+              pivot_wider(names_from = "strategy",
+                          values_from = "order_shares",
+                          names_prefix = "order_shares_")
+            
+            # Adjust column order to match data frame 'orders'
+            non_investable <- non_investable[names(orders)]
+            
+            # Finally: remove orders generated by the optimization (if any) and
+            # add the force-exit orders.
+            orders <- filter(orders, !.data$id %in% non_investable$id)
+            orders <- rbind(orders, non_investable)
+          }
+        }
+
+        # Handle delistings
+        #
+        # Here we enter delisting trades so that the entire positions in stocks
+        # that are delisted are removed by EOD. Note that below, fill rate for
+        # delisting trades will be set to 1 regardless of volume.
+        if (any(input_data$delisting)) {
+
+          delistings <- input_data %>%
+            filter(delisting) %>%
+            select("id", !!portfolio$getShareColumns()) %>%
+            pivot_longer(cols = portfolio$getShareColumns(),
+                         names_to = "strategy",
+                         names_prefix = "shares_",
+                         values_to = "order_shares") %>%
+            # Completely exit the position
+            mutate(order_shares = -1 * order_shares) %>%
+            # Pivot back
+            pivot_wider(names_from = "strategy",
+                        values_from = "order_shares",
+                        names_prefix = "order_shares_")
+          
+          
+          # Recalculate order_shares_joint
+          delistings$order_shares_joint <- rowSums(select(delistings, -"id"))
+          
+          # Adjust column order to match data frame 'orders'
+          delistings <- delistings[names(orders)]
+          
+          orders <- filter(orders, !.data$id %in% delistings$id)
+          orders <- rbind(orders, delistings)
+        }
+
+        # Now that the order generation process is complete, join orders back to the
+        # original cross-section.
         stopifnot(setequal(orders$id, input_data$id))
         input_data <-
           inner_join(input_data, orders, by = "id")
-        
+
         # Now for each strategy, separate orders that need to be worked in the
         # market from orders that net down with orders from other strategies.
         
@@ -432,14 +810,15 @@ Simulation <- R6Class(
         
         input_data$fill_shares_max <-
             round(input_data$volume * simulator_config$fill_rate_pct_vol / 100)
-        
+
         # Compute the fill rate ahead of time for each stock. The fill rate is 1
         # if the maximum number of shares available (fill_shares_max) is greater
         # than the size of the total order across all strategies. Computing this
         # value makes fill calculations easier.
         input_data$fill_rate <-
           ifelse(input_data$order_shares_joint %in% 0 |
-                   abs(input_data$order_shares_joint) <= input_data$fill_shares_max,
+                   abs(input_data$order_shares_joint) <= input_data$fill_shares_max |
+                   input_data$delisting,
                  1,
                  input_data$fill_shares_max / abs(input_data$order_shares_joint))
         
@@ -506,7 +885,6 @@ Simulation <- R6Class(
             # End number of shares = start + fill
             end_shares = .data$shares + .data$fill_shares)
         
-        
         res <- res %>%
           select("id", "strategy", "shares",
                         ends_with("_shares"))
@@ -531,7 +909,8 @@ Simulation <- R6Class(
 
         res <- res %>%
           inner_join(select(input_data, "id", "start_price", "end_price", "dividend", "distribution",
-                            !!simulator_config$save_detail_columns),
+                            "investable", "delisting",
+                            !!simulator_config$add_detail_columns),
                             by = "id") %>%
           mutate(
             # Position P&L is computed by comparing the value of the starting
@@ -583,6 +962,56 @@ Simulation <- R6Class(
             end_nmv = .data$end_shares * .data$end_price,
             end_gmv = abs(.data$end_nmv))
 
+        # Finish processing delistings
+        if (any(res$delisting)) {
+          # Work on rows corresponding to delistings
+          res_delisting <- filter(res, delisting)
+          
+          # First make sure the ending position is flat.
+          if (any(res_delisting$end_int_shares != 0) ||
+              any(res_delisting$end_ext_shares != 0) ||
+              any(res_delisting$end_shares != 0)) {
+            stop("Found non-zero ending position in delisted security")
+          }
+          
+          # Bring in delisting_return
+          res_delisting <- res_delisting %>% left_join(select(pos_delisted, id, delisting_return), by = "id")
+          
+          if (any(is.na(res_delisting$delisting_return))) {
+            stop("Found NA delisting return")
+          }
+          
+          if (!is.numeric(res_delisting$delisting_return)) {
+            stop("Delisting return must be numeric")
+          }
+          
+          if (any(res_delisting$delisting_return < -1)) {
+            stop("Delisting return can not be less than -1")
+          }
+          
+          # Ensure that all P&L and costs for the delisting are zero. Then set
+          # gross and net P&L to the delisting return times starting net
+          # market value.
+          res_delisting <- res_delisting %>%
+            mutate(
+              position_pnl = 0,
+              trading_pnl = 0,
+              trade_costs = 0,
+              financing_costs = 0,
+              gross_pnl = start_nmv * delisting_return,
+              net_pnl = gross_pnl
+            ) %>%
+            select(-delisting_return)
+          
+          # Replace the original rows with the rows we worked on
+          res <- filter(res, !delisting)
+          res <- rbind(res, res_delisting)
+        }
+        
+        # Bring in max position information
+        res <- res %>%
+          left_join(portOpt$getMaxPosition(), by = c("strategy", "id"))
+        
         # if (nrow(filter(res, strategy %in% "joint" & transfer_fill_gmv != 0))) browser()
         
         # Simple sums
@@ -599,7 +1028,7 @@ Simulation <- R6Class(
 
         # More complex aggregation on nmv
         summary_addl_data <- res %>%
-          select("strategy", "end_nmv", "start_nmv") %>%
+          select("strategy", "end_nmv", "start_nmv", "investable") %>%
           group_by(.data$strategy) %>%
           summarise(
             end_lmv = sum(.data$end_nmv[.data$end_nmv > 0]),
@@ -608,7 +1037,8 @@ Simulation <- R6Class(
             start_smv = sum(.data$start_nmv[.data$start_nmv < 0]),
             end_num = sum(.data$end_nmv != 0),
             end_num_long = sum(.data$end_nmv > 0),
-            end_num_short = sum(.data$end_nmv < 0)
+            end_num_short = sum(.data$end_nmv < 0),
+            num_investable = sum(.data$investable)
             )
 
         summary_data <- 
@@ -634,17 +1064,51 @@ Simulation <- R6Class(
         category_vars <- simulator_config$calculate_exposures$category_vars
         factor_vars <- simulator_config$calculate_exposures$factor_vars
         if (!is.null(category_vars) || !is.null(factor_vars)) {
-          
+
           exposures_input <-
             res %>%
-            select("strategy", "id", "end_nmv") %>%
-            left_join(select(private$security_reference, "id", one_of(!!category_vars)),
+            select("strategy", "id", "end_nmv", "end_gmv") %>%
+            left_join(select(input_data, "id", one_of(!!factor_vars), one_of(!!category_vars)),
                              by = "id") %>%
-            left_join(select(input_data, "id", one_of(!!factor_vars)),
-                             by = "id")
+            mutate(end_lmv = ifelse(end_nmv > 0, end_nmv, 0),
+                   end_smv = ifelse(end_nmv < 0, end_nmv, 0))
           
-          exposures <- private$calculateExposures(exposures_input, category_vars, factor_vars)
-          private$saveExposures(current_date, exposures)
+          # Save net exposures
+          exposures <- calculate_exposures(detail_df = exposures_input,
+                                           in_var = "end_nmv",
+                                           weight_divisor = private$getStrategyCapital(),
+                                           category_vars = category_vars,
+                                           factor_vars = factor_vars)
+          
+          private$saveExposures(current_date, exposures, type = "net")
+          
+          # Save long exposures
+          exposures <- calculate_exposures(detail_df = exposures_input,
+                                           in_var = "end_lmv",
+                                           weight_divisor = private$getStrategyCapital(),
+                                           category_vars = category_vars,
+                                           factor_vars = factor_vars)
+          
+          private$saveExposures(current_date, exposures, type = "long")
+
+          # Save short exposures
+          exposures <- calculate_exposures(detail_df = exposures_input,
+                                           in_var = "end_smv",
+                                           weight_divisor = private$getStrategyCapital(),
+                                           category_vars = category_vars,
+                                           factor_vars = factor_vars)
+          
+          private$saveExposures(current_date, exposures, type = "short")
+          
+          # Save gross exposures
+          exposures <- calculate_exposures(detail_df = exposures_input,
+                                           in_var = "end_gmv",
+                                           weight_divisor = private$getStrategyCapital(),
+                                           category_vars = category_vars,
+                                           factor_vars = factor_vars)
+          
+          private$saveExposures(current_date, exposures, type = "gross")
+          
         }
         
         # Save sim summary, sim detail, and optimization data.
@@ -654,6 +1118,32 @@ Simulation <- R6Class(
         # only turn saving detail off and on.
         if (is.null(simulator_config$skip_saving) ||
             !"detail" %in% simulator_config$skip_saving) {
+          
+          # The full detail dataset is large. To save specific columns, use the
+          # simulator/keep_detail_columns parameter.
+          
+          
+          
+          if (!is.null(simulator_config$keep_detail_columns)) {
+            keep_detail_columns <-
+                unique(c("id", "strategy",
+                       simulator_config$keep_detail_columns))
+            res <- res %>% select(!!keep_detail_columns)
+          }
+          
+          # The 'keep_detail_all_rows' flag controls whether to save all detail
+          # rows, or only rows where there is a holding or trade for the stock.
+          # It defaults to FALSE.
+          keep_detail_all_rows <- FALSE
+          if (!is.null(simulator_config$keep_detail_all_rows) &&
+              is.logical(simulator_config$keep_detail_all_rows)) {
+            keep_detail_all_rows <- simulator_config$keep_detail_all_rows
+          }
+          
+          if (!isTRUE(keep_detail_all_rows)) {
+            res <- res %>% filter(start_nmv != 0 | end_nmv != 0)
+          }
+          
           private$saveSimDetail(current_date, res)
         }
         private$saveOptimizationSummary(current_date, portOpt$summaryDf())
@@ -689,6 +1179,9 @@ Simulation <- R6Class(
     },
     
     #' @description Get summary information.
+    #' @param strategy_name Character vector of length 1 that specifies the
+    #'   strategy for which to get detail data. If \code{NULL} data for all
+    #'   strategies is returned. Defaults to \code{NULL}.
     #' @return An object of class \code{data.frame} that contains summary data
     #'   for the simulation, by period, at the joint and strategy level. The data
     #'   frame contains the following columns:
@@ -741,11 +1234,16 @@ Simulation <- R6Class(
     #'     trade_costs - financing_costs.}
     #'     \item{fill_rate_pct}{Total fill rate across all market orders,
     #'     calculated as 100 * market_fill_gmv / market_order_gmv.}
+    #'     \item{num_investable}{Number of investable securities (size of universe).}
     #'     
     #'   }
     #'   
-    getSimSummary = function() {
-      invisible(bind_rows(private$sim_summary_list))
+    getSimSummary = function(strategy_name = NULL) {
+      res <- bind_rows(private$sim_summary_list)
+      if (!is.null(strategy_name)) {
+        res <- filter(res, .data$strategy %in% !!strategy_name)
+      }
+      invisible(res)
     },
     
     #' @description Get detail information.
@@ -759,9 +1257,12 @@ Simulation <- R6Class(
     #' @param security_id Character vector of length 1 that specifies the
     #'   security for which to get detail data. If \code{NULL} data for all
     #'   securities is returned. Defaults to \code{NULL}.
-    #' @return An object of class \code{data.frame} that contains detail data
-    #'   for the simulation at the joint and strategy level. Detail data is at
-    #'   the security level. The data frame contains the following columns:
+    #' @param columns Vector of class character specifying the columns to
+    #'   return. This parameter can be useful when dealing with very large
+    #'   detail datasets.
+    #' @return An object of class \code{data.frame} that contains security-level
+    #'   detail data for the simulation for the desired strategies, securities,
+    #'   dates, and columns. Available columns include:
     #'   \describe{
     #'     \item{id}{Security identifier.}
     #'     \item{strategy}{Strategy name, or 'joint' for the aggregate strategy.}
@@ -793,6 +1294,16 @@ Simulation <- R6Class(
     #'     period.}
     #'     \item{distribution}{Distribution (e.g., spin-off) for the security, if
     #'     any, for the period.}
+    #'     \item{investable}{Logical indicating whether the security is part of
+    #'     the investable universe. The value of the flag is set to TRUE if the
+    #'     security has not been delisted and satisfies the universe criterion
+    #'     provided (if any) in the \code{simulator/universe} configuration
+    #'     option.}
+    #'     \item{delisting}{Logical indicating whether a position in the
+    #'     security was removed due to delisting. If delisting is set to TRUE,
+    #'     the gross_pnl and net_pnl columns will contain the P&L
+    #'     due to delisting, if any. P&L due to delisting is calculated as the
+    #'     delisting return times the \code{start_nmv} of the position.}
     #'     \item{position_pnl}{Position P&L, calculated as shares * (end_price +
     #'     dividend + distribution - start_price)}
     #'     \item{trading_pnl}{The difference between the market value of
@@ -828,8 +1339,13 @@ Simulation <- R6Class(
     #'     period.}
     #'     \item{end_gmv}{Gross market value of the position at the end of the
     #'     period.}
+    #'     
     #'   }
-    getSimDetail = function(sim_date = NULL, strategy_name = NULL, security_id = NULL) {
+    getSimDetail = function(sim_date = NULL,
+                            strategy_name = NULL,
+                            security_id = NULL,
+                            columns = NULL) {
+      
       if (!is.null(sim_date)) {
         detail_data <- private$sim_detail_list[[sim_date]]
       } else {
@@ -842,6 +1358,10 @@ Simulation <- R6Class(
       
       if (!is.null(security_id)) {
         detail_data <- detail_data %>% filter(.data$id %in% !!security_id)
+      }
+      
+      if (!is.null(columns)) {
+        detail_data <- detail_data %>% select(!!columns)
       }
       
       invisible(detail_data)
@@ -960,6 +1480,8 @@ Simulation <- R6Class(
     },
     
     #' @description Get end-of-period exposure information.
+    #' @param type Vector of length 1 that may be one of \code{"net"},
+    #'   \code{"long"}, \code{"short"}, and \code{"gross"}.
     #' @return An object of class \code{data.frame} that contains end-of-period
     #'   exposure information for the simulation portfolio. The units of the
     #'   exposures are portfolio weight relative to strategy_captial (i.e., net
@@ -974,8 +1496,9 @@ Simulation <- R6Class(
     #'     \item{\emph{factor}}{Exposure to \emph{factor}, for all factor
     #'     constraints, at the end of the period.}
     #'   }
-    getExposures = function() {
-      invisible(bind_rows(private$exposures_list))
+    getExposures = function(type = "net") {
+      stopifnot(type %in% c("net", "long", "short", "gross"))
+      invisible(bind_rows(private$exposures_list[[type]]))
     },
     
     #' @description Get information on positions removed due to delisting.
@@ -995,26 +1518,33 @@ Simulation <- R6Class(
     #' @return A data frame that contains summary information for the desired
     #'   strategy, as well as columns for cumulative net and gross total return,
     #'   calculated as pnl divided by ending gross market value.
-    getSingleStrategySummaryDf = function(strategy_name, include_zero_row = TRUE) {
+    getSingleStrategySummaryDf = function(strategy_name = "joint", include_zero_row = TRUE) {
       res <- filter(self$getSimSummary(), .data$strategy %in% !!strategy_name)
       
       if (isTRUE(include_zero_row)) {
         # Create a zero-value starting row with date lagged by one day.
         res <- res[c(1, 1:nrow(res)),]
         res$sim_date[1] <- res$sim_date[1] - 1
-        res[1,] <- mutate_if(res[1,], is.numeric, function(x) { 0 })
+        res[1,] <- mutate_if(res[1,], is.numeric, ~ 0)
       }
       
-      # Compute cumulative (net) return
+      # Compute returns as a percentage GMV, by day and cumulative.
+      #
+      # These calculations should probably be done up front in the simulation
+      # loop and saved in the summary dataset.
       mutate(res,
-             net_cum_ret = cumsum(ifelse(end_gmv %in% 0, 0, .data$net_pnl / .data$end_gmv)),
-             gross_cum_ret = cumsum(ifelse(end_gmv %in% 0, 0, .data$gross_pnl / .data$end_gmv)))
+             net_ret = ifelse(end_gmv %in% 0, 0, .data$net_pnl / .data$end_gmv),
+             net_cum_ret = cumsum(net_ret),
+             gross_ret = ifelse(end_gmv %in% 0, 0, .data$gross_pnl / .data$end_gmv),
+             gross_cum_ret = cumsum(gross_ret))
     },
     
     #' @description Draw a plot of cumulative gross and net return by date.
-    plotPerformance = function() {
+    #' @param strategy_name Character vector of length 1 specifying the strategy
+    #'   for the plot. Defaults to \code{"joint"}.
+    plotPerformance = function(strategy_name = "joint") {
       
-      self$getSingleStrategySummaryDf("joint") %>%
+      self$getSingleStrategySummaryDf(strategy_name) %>%
         
         select("sim_date", "gross_cum_ret", "net_cum_ret") %>%
         rename(Gross = "gross_cum_ret", Net = "net_cum_ret") %>%
@@ -1036,13 +1566,79 @@ Simulation <- R6Class(
           axis.text = element_text(size = 10),
           axis.text.x = element_text(angle = 0),
           legend.title = element_blank())
-      
     },
     
-    #' @description Draw a plot of total gross, long, short, and net market value by date.
-    plotMarketValue = function() {
+    #' @description Draw a plot of contribution to net return on GMV for levels
+    #'   of a specified category.
+    #' @param category_var Plot performance contribution for the levels of
+    #'   \code{category_var}. \code{category_var} must be present in the
+    #'   simulation's security reference, and detail data must be present in the
+    #'   object's result data.
+    #' @param strategy_name Character vector of length 1 specifying the strategy
+    #'   for the plot. Defaults to \code{"joint"}.
+    plotContribution = function(category_var, strategy_name = "joint") {
       
-      mv_plot_df <- select(self$getSingleStrategySummaryDf("joint"),
+      stopifnot(length(strategy_name) %in% 1)
+      
+      summary_data <- self$getSimSummary(strategy_name) %>%
+        select(sim_date, end_gmv)
+      
+      # Get the category var values from the security reference if possible.
+      # Otherwise look for them in the detail result data.
+      
+      if (category_var %in% names(self$getSecurityReference())) {
+        contrib_data <- self$getSimDetail(strategy_name = strategy_name,
+                                          columns = c("id", "sim_date", "net_pnl")) %>%
+          left_join(select(self$getSecurityReference(), "id", !!category_var), by = "id")
+      } else {
+        contrib_data <- self$getSimDetail(strategy_name = strategy_name,
+                                          columns = c("id", "sim_date", "net_pnl", category_var))
+      }
+      
+      contrib_data <- contrib_data %>%
+        group_by_at(c("sim_date", category_var)) %>%
+        summarise(net_pnl = sum(net_pnl)) %>%
+        ungroup() %>%
+        left_join(summary_data, by = c("sim_date")) %>%
+        group_by_at(category_var) %>%
+        mutate(net_ret = net_pnl / end_gmv,
+               cum_net_ret = cumsum(net_ret)) %>%
+        ungroup()
+      
+      # Adding zero-row for each group
+      zero_rows <- contrib_data %>% filter(!duplicated(get(category_var))) %>%
+        mutate(sim_date = sim_date - 1) %>%
+        mutate_if(is.numeric, ~ 0)
+      
+      contrib_data <- rbind(zero_rows, contrib_data)
+      
+      contrib_data %>%
+        ggplot(aes(x = sim_date, y = 100 * cum_net_ret, color = get(category_var), group = get(category_var))) +
+        geom_line() +
+        xlab("Date") + ylab("Contribution (%)") + 
+        ggtitle(paste0(category_var, " Contribution to Net Return (% GMV)")) + 
+        theme_light() + 
+        theme(
+          plot.background = element_rect(fill = NA, colour = NA),
+          plot.title = element_text(size = 18),
+          
+          axis.text = element_text(size = 10),
+          axis.text.x = element_text(angle = 0),
+          legend.title = element_blank())
+
+    },
+      
+    #' @description Draw a plot of total gross, long, short, and net market
+    #'   value by date.
+    #' @param strategy_name Character vector of length 1 specifying the strategy
+    #'   for the plot. Defaults to \code{"joint"}.
+    plotMarketValue = function(strategy_name = "joint") {
+
+      if (!strategy_name %in% c("joint", private$config$getStrategyNames())) {
+        stop(paste0("Invalid strategy name: ", strategy_name))
+      }
+      
+      mv_plot_df <- select(self$getSingleStrategySummaryDf(strategy_name),
                            sim_date, GMV = end_gmv, LMV = end_lmv, SMV = end_smv, NMV = end_nmv) %>%
         gather(type, value, GMV:NMV) %>% 
         filter(!is.na(value))
@@ -1066,12 +1662,25 @@ Simulation <- R6Class(
     },
     
     #' @description Draw a plot of exposure to all levels in a category by date.
-    #' @param in_var Category for which exposures are plotted.
-    plotCategoryExposure = function(in_var) {
-      exposures <- self$getExposures() %>% filter(strategy %in% "joint")
+    #' @param in_var Category for which exposures are plotted. In order to plot
+    #'   exposures for category \code{in_var}, we must have run the simulation
+    #'   with \code{in_var} in the config setting
+    #'   \code{simulator/calculate_exposures/category_vars}.
+    #' @param strategy_name Character vector of length 1 specifying the strategy
+    #'   for the plot. Defaults to \code{"joint"}.
+    plotCategoryExposure = function(in_var, strategy_name = "joint") {
+      
+      exposures <- self$getExposures() %>% filter(strategy %in% strategy_name) %>%
+        select("sim_date", starts_with(in_var))
+
+      # Make sure that there is at least one level for in_var present in the
+      # object's exposure data. If only sim_date is present, then most likely
+      # exposure to in_var was not calculated by the simulation.
+      if (ncol(exposures) %in% 1) {
+        stop(paste0("No exposure data found for in_var: ", in_var))
+      }
       
       exposures %>%
-        select("sim_date", starts_with(in_var)) %>%
         pivot_longer(-"sim_date",
                      names_to = in_var,
                      names_prefix = paste0(in_var, "_"),
@@ -1093,8 +1702,10 @@ Simulation <- R6Class(
     
     #' @description Draw a plot of exposure to factors by date.
     #' @param in_var Factors for which exposures are plotted.
-    plotFactorExposure = function(in_var) {
-      exposures <- self$getExposures() %>% filter(strategy %in% "joint")
+    #' @param strategy_name Character vector of length 1 specifying the strategy
+    #'   for the plot. Defaults to \code{"joint"}.
+    plotFactorExposure = function(in_var, strategy_name = "joint") {
+      exposures <- self$getExposures() %>% filter(strategy %in% strategy_name)
       exposures %>%
         select("sim_date", one_of(!!in_var)) %>%
         pivot_longer(-"sim_date",
@@ -1116,8 +1727,10 @@ Simulation <- R6Class(
     },
     
     #' @description Draw a plot of number of long and short positions by date.
-    plotNumPositions = function() {
-      self$getSingleStrategySummaryDf("joint") %>%
+    #' @param strategy_name Character vector of length 1 specifying the strategy
+    #'   for the plot. Defaults to \code{"joint"}.
+    plotNumPositions = function(strategy_name = "joint") {
+      self$getSingleStrategySummaryDf(strategy_name) %>%
         select("sim_date", "end_num_long", "end_num_short") %>%
         rename(Long = "end_num_long", Short = "end_num_short") %>%
         pivot_longer(
@@ -1139,6 +1752,74 @@ Simulation <- R6Class(
           legend.title = element_blank())  
     },
     
+    #' @description Draw a plot of number of long and short positions by date.
+    #' @param strategy_name Character vector of length 1 specifying the strategy
+    #'   for the plot. Defaults to \code{"joint"}.
+    plotTurnover = function(strategy_name = "joint") {
+      
+      self$getSimSummary(strategy_name) %>%
+        select("sim_date", "market_fill_gmv") %>%
+        ggplot(aes(x = sim_date, y = market_fill_gmv)) + geom_bar(stat = "identity") +
+        xlab("Date") + ylab("Traded GMV ($)") + 
+        ggtitle("Turnover") + 
+        theme_light() + 
+        theme(
+          plot.background = element_rect(fill = NA, colour = NA),
+          plot.title = element_text(size = 18),
+          
+          axis.text = element_text(size = 10),
+          axis.text.x = element_text(angle = 0),
+          legend.title = element_blank())  
+    },
+    
+    #' @description Draw a plot of the universe size, or number of investable
+    #'   stocks, over time.
+    #' @param strategy_name Character vector of length 1 specifying the strategy
+    #'   for the plot. Defaults to \code{joint}.
+    plotUniverseSize = function(strategy_name = "joint") {
+      
+      investable_data <- self$getSimSummary(strategy_name = strategy_name)
+      
+      investable_data %>%
+        ggplot(aes(x = sim_date, y = num_investable)) + geom_line() +
+        xlab("Date") + ylab("Number of securities") + 
+        ggtitle("Universe size") + 
+        theme_light() + 
+        theme(
+          plot.background = element_rect(fill = NA, colour = NA),
+          plot.title = element_text(size = 18),
+          
+          axis.text = element_text(size = 10),
+          axis.text.x = element_text(angle = 0),
+          legend.title = element_blank())  
+        
+      
+    },
+    
+    #' @description Draw a plot of the percentage of portfolio GMV held in
+    #'   non-investable stocks (e.g., stocks that do not satisfy universe criteria)
+    #'   for a given strategy. Note that this plot requires detail data.
+    #' @param strategy_name Character vector of length 1 specifying the strategy
+    #'   for the plot. Defaults to \code{"joint"}.
+    plotNonInvestablePct = function(strategy_name = "joint") {
+      investable_data <- self$getSimDetail(strategy_name = strategy_name,
+                                           columns = c("sim_date", "id","end_gmv", "investable"))
+      investable_data %>%
+        group_by(sim_date) %>%
+        summarise(pct_non_investable = 100 * (1 - sum(end_gmv[investable]) / sum(end_gmv))) %>%
+        ggplot(aes(x = sim_date, y = pct_non_investable)) + geom_line() +
+        xlab("Date") + ylab("Percentage GMV") +
+        ggtitle("Percentage of GMV in\nnon-investable securites") + 
+        theme_light() + 
+        theme(
+          plot.background = element_rect(fill = NA, colour = NA),
+          plot.title = element_text(size = 18),
+          
+          axis.text = element_text(size = 10),
+          axis.text.x = element_text(angle = 0),
+          legend.title = element_blank())
+    },
+
     #' @description Calculate overall simulation summary statistics, such as
     #'   total P&L, Sharpe, average market values and counts, etc.
     #' @return A data frame that contains summary statistics, suitable for
@@ -1181,9 +1862,57 @@ Simulation <- R6Class(
           formatC(mean(res$end_num), big.mark = ",", digit = 0, format = "f"),
           formatC(mean(res$market_fill_gmv), big.mark = ",", digit = 0, format = "f"),
           sprintf("%0.1f", 12 / (mean(res$market_fill_gmv) / mean(res$end_gmv) * 252 / 2))
-        ))
+        
+        ), stringsAsFactors = FALSE)
     },
     
+    #' @description Calculate return for each month and summary statistics for
+    #'   each year, such as total return and annualized Sharpe. Return in data
+    #'   frame format suitable for reporting.
+    #' @return  The data frame contains one row for each calendar year in the
+    #'   simulation, and up to seventeen columns: one column for year, one
+    #'   column for each calendar month, and columns for the year's total
+    #'   return, annualized return, annualized volatility, and annualized
+    #'   Sharpe. Total return is the sum of daily net returns. Annualized return
+    #'   is the mean net return times 252. Annualized volatility is the standard
+    #'   deviation of net return times the square root of 252. Annualized Sharpe
+    #'   is the ratio of annualized return to annualized volatility. All returns
+    #'   are in percent.
+    overallReturnsByMonthDf = function() {
+      res <- self$getSingleStrategySummaryDf("joint", include_zero_row = FALSE)
+      
+      # Group by month and calculate return.
+      month_ret_long <- group_by(res, date = as.Date(paste0(format(sim_date, "%Y-%m"), "-01"))) %>%
+        summarise(ret = sum(net_ret) * 100) %>%
+        ungroup() %>%
+        transmute(year = lubridate::year(date),
+                  month = lubridate::month(date),
+                  ret)
+      
+      # Organize monthly returns into rows, one for each year.
+      month_ret_yearly <- month_ret_long %>%
+        tidyr::spread(month, ret)
+      
+      # Compute summary statistics for each year.
+      stats_yearly <- group_by(res, year = lubridate::year(sim_date)) %>%
+        summarise(
+          total_ret = 100 *sum(net_ret),
+          ann_ret = 100 * mean(net_ret) * 252, 
+          ann_vol = 100 * sd(net_ret) * sqrt(252)) %>%
+        mutate(ann_sr = ann_ret / ann_vol)
+      
+      # Add stats to monthly returns.
+      month_ret_yearly <- month_ret_yearly %>%
+        left_join(stats_yearly, by = "year")
+      
+      month_cols <- names(month_ret_yearly)[names(month_ret_yearly) %in% as.character(1:12)]
+      
+      # Replace numerical month strings with month abbreviation. Do it this way
+      # to handle cases where there are fewer than 12 months.
+      month_ret_yearly %>%
+        rename_at(month_cols, ~ month.abb[as.numeric(.x)])
+    },  
+      
     #' @description Print overall simulation statistics.
     print = function() {
       if (is.null(private$sim_summary_list)) {
@@ -1202,6 +1931,8 @@ Simulation <- R6Class(
       # TODO Add getter and setter for raw config data in the Config class.
       yaml::write_yaml(private$config$config, paste0(out_loc, "/config.yaml"))
       
+      
+      write_feather(self$getSecurityReference(), paste0(out_loc, "/security_reference.feather"))
       write_feather(self$getSimSummary(), paste0(out_loc, "/sim_summary.feather"))
       write_feather(self$getSimDetail(), paste0(out_loc, "/sim_detail.feather"))
       write_feather(self$getInputStats(), paste0(out_loc, "/input_stats.feather"))
@@ -1222,19 +1953,47 @@ Simulation <- R6Class(
     readFeather = function(in_loc) {
       
       # TODO Check to see if this object is empty before loading up data.
-      private$config$config <- yaml::yaml.load_file(paste0(in_loc, "/config.yaml"))
+      private$config <- StrategyConfig$new(yaml::yaml.load_file(paste0(in_loc, "/config.yaml")))
       
+      private$security_reference <- read_feather(paste0(in_loc, "/security_reference.feather"))
       private$sim_summary_list <- list(read_feather(paste0(in_loc, "/sim_summary.feather")))
       private$sim_detail_list <- list(read_feather(paste0(in_loc, "/sim_detail.feather")))
       private$input_stats_list <- list(read_feather(paste0(in_loc, "/input_stats.feather")))
       private$loosening_info_list <- list(read_feather(paste0(in_loc, "/loosening_info.feather")))
       private$optimization_summary_list <- list(read_feather(paste0(in_loc, "/optimization_summary.feather")))
-      private$exposures_list <- list(read_feather(paste0(in_loc, "/exposures.feather")))
+      private$exposures_list$net <- list(read_feather(paste0(in_loc, "/exposures.feather")))
       private$delistings_list <- list(read_feather(paste0(in_loc, "/delistings.feather")))
       
       warning("It will not be possible to use the sim_date parameter of getSimDetail on this object to filter detail records by period")
       
       invisible(self)
+    },
+    
+    #' @description Get the object's configuration information.
+    #' @return Object of class \code{list} that contains the simulation's
+    #'   configuration information.
+    getConfig = function() {
+      invisible(private$config)
+    },
+    
+    
+    #' @description Write an html document of simulation results.
+    #' @param res The object of class 'Simulation' which we want to write the
+    #'   report about.
+    #' @param out_dir Directory in which output files should be created
+    #' @param out_file File name for output
+    #' @param out_fmt Format in which output files should be created. The
+    #'   default is html and that is currently the only option.
+    #' @param contrib_vars Security reference variables for which to plot return
+    #'   contribution.
+    writeReport = function(out_dir, out_file, out_fmt = "html", contrib_vars = NULL) {
+      rmarkdown::render(input = system.file("reports/simReport.Rmd",
+                                            package = "strand"),
+                        output_format = paste0(out_fmt, "_document"),
+                        output_file = out_file,
+                        output_dir = out_dir,
+                        params = list(res = self, contrib_vars = contrib_vars),
+                        quiet = TRUE)
     }
   ),
   
@@ -1244,12 +2003,13 @@ Simulation <- R6Class(
     
     config = NULL,
     raw_input_data = NULL,
+    input_dates = NULL,
     raw_pricing_data = NULL,
     security_reference = NULL,
-    delisting_dates = NULL,
+    delisting_data = NULL,
     shiny_callback = NULL,
     verbose = FALSE,
-    
+
     # Results
     
     # _list objects are lists whose elements are result data for single
@@ -1279,74 +2039,19 @@ Simulation <- R6Class(
     delistings_list = NULL,
     
     # @description Get the strategy capital levels for the strategy, based on
-    #   the simulator's config.
-    # @return A data frame with two columns: strategy (name of the strategy, or
-    #   'joint'), and strategy_capital (capital for the strategy).
+    #   the simulation's config.
+    # @return A list where the names are strategy names (or 'joint') and the
+    #   values are the capital levels for each strategy,
     getStrategyCapital = function() {
-      strategy_capital_df <- NULL
-      joint_capital <- 0
+      capital_list <- list(joint = 0)
       
       for (strategy_name in private$config$getStrategyNames()) {
-        
+          
         this_capital <- private$config$getStrategyConfig(strategy_name, "strategy_capital")
-        joint_capital <- joint_capital + this_capital
-        
-        strategy_capital_df <- rbind(
-          strategy_capital_df,
-          data.frame(
-            strategy = strategy_name,
-            strategy_capital = this_capital,
-            stringsAsFactors = FALSE)
-        )
+        capital_list[[strategy_name]] <- this_capital
+        capital_list[["joint"]] <- capital_list[["joint"]] + this_capital
       }
-      
-      rbind(strategy_capital_df,
-            data.frame(
-              strategy = "joint",
-              strategy_capital = joint_capital,
-              stringsAsFactors = FALSE)
-      )
-    },
-    
-    # @description Calculate ending portfolio exposures relative to strategy
-    #   capital, for factors and categories, for all strategies in a simulation
-    #   and for the joint strategy. This method is used to compute the
-    #   exposures that are saved in a simulation's \code{SimResult} object.
-    # @return A data frame of exposure information.
-    calculateExposures = function(detail_df, category_vars = NULL, factor_vars = NULL) {
-      exp_res <- private$getStrategyCapital()
-      
-      for (cat_var in category_vars) {
-        this_exposures <- 
-          detail_df %>%
-          group_by(.dots = c("strategy", cat_var)) %>%
-          summarise(exposure = sum(.data$end_nmv)) %>%
-          left_join(private$getStrategyCapital(),
-                    by = "strategy") %>%
-          mutate(exposure = .data$exposure / .data$strategy_capital) %>%
-          pivot_wider(
-            names_from = cat_var,
-            names_prefix = paste0(cat_var, "_"),
-            values_from = "exposure") %>%
-          select(-"strategy_capital")
-        
-        exp_res <- left_join(exp_res, this_exposures, by = "strategy")    
-      }
-      
-      for (fact_var in factor_vars) {
-        this_exposures <- 
-          detail_df %>%
-          group_by(.data$strategy) %>%
-          summarise(!!fact_var := sum(.data$end_nmv * .data[[fact_var]])) %>%
-          left_join(private$getStrategyCapital(),
-                    by = "strategy") %>%
-          mutate(!!fact_var := .data[[fact_var]] / .data$strategy_capital) %>%
-          select(-"strategy_capital")
-        
-        exp_res <- left_join(exp_res, this_exposures, by = "strategy")    
-      }
-      
-      exp_res
+      capital_list
     },
     
     # @description Save summary information.
@@ -1397,8 +2102,9 @@ Simulation <- R6Class(
     # @description Save exposure information.
     # @param period Period to which the data pertains.
     # @param data_obj Data frame to save.
-    saveExposures = function(period, data_obj) {
-      private$exposures_list[[as.character(period)]] <-
+    saveExposures = function(period, data_obj, type = "net") {
+      stopifnot(type %in% c("net", "long", "short", "gross"))
+      private$exposures_list[[type]][[as.character(period)]] <-
         mutate(data_obj, sim_date = period)
       invisible(self)
     },
