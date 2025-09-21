@@ -54,6 +54,14 @@ sim$plotFactorExposure(c("value", "size"))
 sim$plotNumPositions()
 }
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/strand-tech/strand}
+  \item Report bugs at \url{https://github.com/strand-tech/strand/issues}
+}
+
+}
 \author{
 Jeff Enos \email{jeffrey.enos@gmail.com} and David Kane \email{dave.kane@gmail.com}
 }

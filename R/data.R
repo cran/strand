@@ -20,7 +20,7 @@
 #' weekdays, from 2020-06-01 to 2020-08-31. Data items include average trading
 #' dollar volume, market cap, and normalized size and value factors. The pricing
 #' data used to construct the dataset was downloaded using the
-#' \href{https://api.tiingo.com/}{Tiingo Stock API} and is used with permission.
+#' Tiingo Stock API and is used with permission.
 #' Fundamental data items were downloaded from EDGAR.
 #'
 #' Data for most members of the S&P 500 are present. Some securities have been
@@ -57,7 +57,7 @@
 #'
 #' A dataset containing sample security pricing data for 492 securities and 65
 #' weekdays, from 2020-06-01 to 2020-08-31. This data was downloaded using the
-#' \href{https://api.tiingo.com/}{Tiingo Stock API} and is redistributed with
+#' Tiingo Stock API and is redistributed with
 #' permission.
 #'
 #' Full code for reconstructing the dataset can be found in the

@@ -75,7 +75,7 @@ This data can be provided to the simulator directly using objects stored in memo
 
 In this vignette we will use the package's sample data sets as input and supply them as objects in memory. For a discussion of how to use files for input data, see [Appendix: file-based inputs].
 
-The package's sample data set includes value and size factors, as well as pricing information, for most of the stocks in the S&P 500 for the period June-August 2020. The source of fundamental data is EDGAR, and all pricing data was downloaded using the [Tiingo Stock API](https://api.tiingo.com/).
+The package's sample data set includes value and size factors, as well as pricing information, for most of the stocks in the S&P 500 for the period June-August 2020. The source of fundamental data is EDGAR, and all pricing data was downloaded using the Tiingo Stock API.
 
 ### Loading required packages
 
@@ -394,7 +394,7 @@ The top-level parameter `solver` controls which linear optimization toolkit is u
 solver: glpk
 ```
 
-Currently there are two options: `glpk` to use the [GNU Linear Programming Kit](https://www.gnu.org/software/glpk/), and `symphony` to use the [COIN-OR SYMPHONY](https://projects.coin-or.org/SYMPHONY) solver.
+Currently there are two options: `glpk` to use the [GNU Linear Programming Kit](https://www.gnu.org/software/glpk/), and `symphony` to use the [COIN-OR SYMPHONY](https://github.com/coin-or/SYMPHONY) solver.
 
 ### Participation rate limit
 
@@ -508,7 +508,7 @@ Here we can also see spikes of exposure outside the constrained range +/-1\%. As
 
 The first part of the vignette showed how to run a simulation where all data is supplied using objects in memory. In this appendix we discuss setting up a simulation where all data comes from binary `feather` files stored on disk. This approach is useful for running simulations over many periods with a small memory footprint.
 
-In this section we assume we have a directory called `sample_data` in the vignettes directory that contains security reference, pricing, and alpha/factor input data in `feather` format. An archive of sample data that matches the configuration below is [available for download](https://github.com/strand-tech/strand/raw/master/sample_data.tar.gz) from the package's GitHub repository for experimentation.
+In this section we assume we have a directory called `sample_data` in the vignettes directory that contains security reference, pricing, and alpha/factor input data in `feather` format. An archive of sample data that matches the configuration below is [available for download](https://github.com/strand-tech/strand/blob/main/sample_data.tar.gz) from the package's GitHub repository for experimentation.
 
 ### Security reference
 

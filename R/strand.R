@@ -67,4 +67,4 @@
 #' sim$plotFactorExposure(c("value", "size"))
 #' sim$plotNumPositions()
 #' }
-NULL
+"_PACKAGE"

@@ -1,8 +1,8 @@
 Package: strand
 Type: Package
 Title: A Framework for Investment Strategy Simulation
-Version: 0.2.0
-Date: 2020-11-18
+Version: 0.2.2
+Date: 2025-09-21
 Authors@R: 
     c(person(given = "Jeff",
              family ="Enos",
@@ -39,9 +39,9 @@ Suggests: testthat, knitr, rmarkdown, shiny, shinyFiles, shinyjs, DT,
 Encoding: UTF-8
 LazyData: true
 VignetteBuilder: knitr
-RoxygenNote: 7.1.1
+RoxygenNote: 7.3.3
 NeedsCompilation: no
-Packaged: 2020-11-19 01:59:29 UTC; enos
+Packaged: 2025-09-21 19:51:49 UTC; root
 Author: Jeff Enos [cre, aut, cph],
   David Kane [aut],
   Ben Czekanski [ctb],
@@ -50,4 +50,4 @@ Author: Jeff Enos [cre, aut, cph],
   Nils Wallin [ctb]
 Maintainer: Jeff Enos <jeffrey.enos@gmail.com>
 Repository: CRAN
-Date/Publication: 2020-11-19 21:40:06 UTC
+Date/Publication: 2025-09-21 22:20:02 UTC

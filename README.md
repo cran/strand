@@ -3,9 +3,6 @@
 
 [![CRAN
 status](https://www.r-pkg.org/badges/version/strand)](https://cran.r-project.org/package=strand)
-[![Build
-Status](https://travis-ci.org/strand-tech/strand.svg?branch=master)](https://travis-ci.org/strand-tech/strand)
-[![codecov](https://codecov.io/gh/strand-tech/strand/branch/master/graph/badge.svg)](https://codecov.io/gh/strand-tech/strand)
 
 ## Overview
 
@@ -37,12 +34,11 @@ provides an in-depth discussion of setup and usage. See
 
 ### Tiingo and EDGAR sample data
 
-The package’s sample data set includes value and size factors, as well
-as daily pricing information, for most of the stocks in the S\&P 500 for
-the period June-August 2020. The source of fundamental data is
-[EDGAR](https://www.sec.gov/edgar.shtml), and all pricing data was
-downloaded using the [Tiingo Stock API](https://api.tiingo.com/).
-Special thanks to Tiingo for giving permission to release this data.
+The package’s sample data set includes value and size factors, as well as daily
+pricing information, for most of the stocks in the S\&P 500 for the period
+June-August 2020. The source of fundamental data is EDGAR, and all pricing data
+was downloaded using the Tiingo Stock API. Special
+thanks to Tiingo for giving permission to release this data.
 
 ## Installation
 

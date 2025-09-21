@@ -46,24 +46,24 @@ opt$solve()
 \section{Methods}{
 \subsection{Public methods}{
 \itemize{
-\item \href{#method-new}{\code{PortOpt$new()}}
-\item \href{#method-setVerbose}{\code{PortOpt$setVerbose()}}
-\item \href{#method-addConstraints}{\code{PortOpt$addConstraints()}}
-\item \href{#method-getConstraintMatrix}{\code{PortOpt$getConstraintMatrix()}}
-\item \href{#method-getConstraintMeta}{\code{PortOpt$getConstraintMeta()}}
-\item \href{#method-solve}{\code{PortOpt$solve()}}
-\item \href{#method-getResultData}{\code{PortOpt$getResultData()}}
-\item \href{#method-getLoosenedConstraints}{\code{PortOpt$getLoosenedConstraints()}}
-\item \href{#method-getMaxPosition}{\code{PortOpt$getMaxPosition()}}
-\item \href{#method-getMaxOrder}{\code{PortOpt$getMaxOrder()}}
-\item \href{#method-summaryDf}{\code{PortOpt$summaryDf()}}
-\item \href{#method-print}{\code{PortOpt$print()}}
-\item \href{#method-clone}{\code{PortOpt$clone()}}
+\item \href{#method-PortOpt-new}{\code{PortOpt$new()}}
+\item \href{#method-PortOpt-setVerbose}{\code{PortOpt$setVerbose()}}
+\item \href{#method-PortOpt-addConstraints}{\code{PortOpt$addConstraints()}}
+\item \href{#method-PortOpt-getConstraintMatrix}{\code{PortOpt$getConstraintMatrix()}}
+\item \href{#method-PortOpt-getConstraintMeta}{\code{PortOpt$getConstraintMeta()}}
+\item \href{#method-PortOpt-solve}{\code{PortOpt$solve()}}
+\item \href{#method-PortOpt-getResultData}{\code{PortOpt$getResultData()}}
+\item \href{#method-PortOpt-getLoosenedConstraints}{\code{PortOpt$getLoosenedConstraints()}}
+\item \href{#method-PortOpt-getMaxPosition}{\code{PortOpt$getMaxPosition()}}
+\item \href{#method-PortOpt-getMaxOrder}{\code{PortOpt$getMaxOrder()}}
+\item \href{#method-PortOpt-summaryDf}{\code{PortOpt$summaryDf()}}
+\item \href{#method-PortOpt-print}{\code{PortOpt$print()}}
+\item \href{#method-PortOpt-clone}{\code{PortOpt$clone()}}
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-new"></a>}}
-\if{latex}{\out{\hypertarget{method-new}{}}}
+\if{html}{\out{<a id="method-PortOpt-new"></a>}}
+\if{latex}{\out{\hypertarget{method-PortOpt-new}{}}}
 \subsection{Method \code{new()}}{
 Create a new \code{PortOpt} object.
 \subsection{Usage}{
@@ -123,8 +123,8 @@ opt$solve()
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-setVerbose"></a>}}
-\if{latex}{\out{\hypertarget{method-setVerbose}{}}}
+\if{html}{\out{<a id="method-PortOpt-setVerbose"></a>}}
+\if{latex}{\out{\hypertarget{method-PortOpt-setVerbose}{}}}
 \subsection{Method \code{setVerbose()}}{
 Set the verbose flag to control the amount of informational
   output.
@@ -144,8 +144,8 @@ No return value, called for side effects.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-addConstraints"></a>}}
-\if{latex}{\out{\hypertarget{method-addConstraints}{}}}
+\if{html}{\out{<a id="method-PortOpt-addConstraints"></a>}}
+\if{latex}{\out{\hypertarget{method-PortOpt-addConstraints}{}}}
 \subsection{Method \code{addConstraints()}}{
 Add optimization constraints.
 \subsection{Usage}{
@@ -192,8 +192,8 @@ No return value, called for side effects.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-getConstraintMatrix"></a>}}
-\if{latex}{\out{\hypertarget{method-getConstraintMatrix}{}}}
+\if{html}{\out{<a id="method-PortOpt-getConstraintMatrix"></a>}}
+\if{latex}{\out{\hypertarget{method-PortOpt-getConstraintMatrix}{}}}
 \subsection{Method \code{getConstraintMatrix()}}{
 Constraint matrix access.
 \subsection{Usage}{
@@ -205,8 +205,8 @@ The optimization's constraint matrix.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-getConstraintMeta"></a>}}
-\if{latex}{\out{\hypertarget{method-getConstraintMeta}{}}}
+\if{html}{\out{<a id="method-PortOpt-getConstraintMeta"></a>}}
+\if{latex}{\out{\hypertarget{method-PortOpt-getConstraintMeta}{}}}
 \subsection{Method \code{getConstraintMeta()}}{
 Provide high-level constraint information.
 \subsection{Usage}{
@@ -221,8 +221,8 @@ A data frame that contains constraint metadata, such as current constraint value
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-solve"></a>}}
-\if{latex}{\out{\hypertarget{method-solve}{}}}
+\if{html}{\out{<a id="method-PortOpt-solve"></a>}}
+\if{latex}{\out{\hypertarget{method-PortOpt-solve}{}}}
 \subsection{Method \code{solve()}}{
 Solve the optimization. After running \code{solve()},
   results can be retrieved using \code{getResultData()}.
@@ -235,8 +235,8 @@ No return value, called for side effects.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-getResultData"></a>}}
-\if{latex}{\out{\hypertarget{method-getResultData}{}}}
+\if{html}{\out{<a id="method-PortOpt-getResultData"></a>}}
+\if{latex}{\out{\hypertarget{method-PortOpt-getResultData}{}}}
 \subsection{Method \code{getResultData()}}{
 Get optimization result.
 \subsection{Usage}{
@@ -250,8 +250,8 @@ A data frame that contains the number of shares and the net
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-getLoosenedConstraints"></a>}}
-\if{latex}{\out{\hypertarget{method-getLoosenedConstraints}{}}}
+\if{html}{\out{<a id="method-PortOpt-getLoosenedConstraints"></a>}}
+\if{latex}{\out{\hypertarget{method-PortOpt-getLoosenedConstraints}{}}}
 \subsection{Method \code{getLoosenedConstraints()}}{
 Provide information about any constraints that were loosened
   in order to solve the optimization.
@@ -269,8 +269,8 @@ Object of class \code{list} where keys are the names of the
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-getMaxPosition"></a>}}
-\if{latex}{\out{\hypertarget{method-getMaxPosition}{}}}
+\if{html}{\out{<a id="method-PortOpt-getMaxPosition"></a>}}
+\if{latex}{\out{\hypertarget{method-PortOpt-getMaxPosition}{}}}
 \subsection{Method \code{getMaxPosition()}}{
 Provide information about the maximum position size allowed
   for long and short positions.
@@ -291,8 +291,8 @@ An object of class \code{data.frame} that contains the limits on
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-getMaxOrder"></a>}}
-\if{latex}{\out{\hypertarget{method-getMaxOrder}{}}}
+\if{html}{\out{<a id="method-PortOpt-getMaxOrder"></a>}}
+\if{latex}{\out{\hypertarget{method-PortOpt-getMaxOrder}{}}}
 \subsection{Method \code{getMaxOrder()}}{
 Provide information about the maximum order size allowed
   for each security and strategy.
@@ -312,8 +312,8 @@ An object of class \code{data.frame} that contains the limit on
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-summaryDf"></a>}}
-\if{latex}{\out{\hypertarget{method-summaryDf}{}}}
+\if{html}{\out{<a id="method-PortOpt-summaryDf"></a>}}
+\if{latex}{\out{\hypertarget{method-PortOpt-summaryDf}{}}}
 \subsection{Method \code{summaryDf()}}{
 Provide aggregate level optimization information if the
   problem has been solved.
@@ -328,8 +328,8 @@ A data frame with one row per strategy, including the joint (net)
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-print"></a>}}
-\if{latex}{\out{\hypertarget{method-print}{}}}
+\if{html}{\out{<a id="method-PortOpt-print"></a>}}
+\if{latex}{\out{\hypertarget{method-PortOpt-print}{}}}
 \subsection{Method \code{print()}}{
 Print summary information.
 \subsection{Usage}{
@@ -341,8 +341,8 @@ No return value, called for side effects.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-clone"></a>}}
-\if{latex}{\out{\hypertarget{method-clone}{}}}
+\if{html}{\out{<a id="method-PortOpt-clone"></a>}}
+\if{latex}{\out{\hypertarget{method-PortOpt-clone}{}}}
 \subsection{Method \code{clone()}}{
 The objects of this class are cloneable with this method.
 \subsection{Usage}{

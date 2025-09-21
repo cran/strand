@@ -27,7 +27,7 @@ data(sample_pricing)
 \description{
 A dataset containing sample security pricing data for 492 securities and 65
 weekdays, from 2020-06-01 to 2020-08-31. This data was downloaded using the
-\href{https://api.tiingo.com/}{Tiingo Stock API} and is redistributed with
+Tiingo Stock API and is redistributed with
 permission.
 }
 \details{

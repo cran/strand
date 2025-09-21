@@ -283,7 +283,7 @@ normalize <- function(x,
   
   if (!is.null(adj_var)) {
     for (j in adj_var) {
-      if (class(x[[j]]) == "numeric") {
+      if (is.numeric(x[[j]])) {
         stopifnot(abs(cor(x$new, normalize(x[[j]]), use = "p")) < 0.1)
       } else {
         stopifnot(all(abs(unlist(lapply(split(x$new, x[[j]]), mean, na.rm = TRUE))) < 0.1, na.rm = TRUE))

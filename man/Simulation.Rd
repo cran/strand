@@ -16,43 +16,43 @@ The \code{Simulation} class is used to set up and run a daily
 \section{Methods}{
 \subsection{Public methods}{
 \itemize{
-\item \href{#method-new}{\code{Simulation$new()}}
-\item \href{#method-setVerbose}{\code{Simulation$setVerbose()}}
-\item \href{#method-setShinyCallback}{\code{Simulation$setShinyCallback()}}
-\item \href{#method-getSecurityReference}{\code{Simulation$getSecurityReference()}}
-\item \href{#method-run}{\code{Simulation$run()}}
-\item \href{#method-getSimDates}{\code{Simulation$getSimDates()}}
-\item \href{#method-getSimSummary}{\code{Simulation$getSimSummary()}}
-\item \href{#method-getSimDetail}{\code{Simulation$getSimDetail()}}
-\item \href{#method-getPositionSummary}{\code{Simulation$getPositionSummary()}}
-\item \href{#method-getInputStats}{\code{Simulation$getInputStats()}}
-\item \href{#method-getLooseningInfo}{\code{Simulation$getLooseningInfo()}}
-\item \href{#method-getOptimizationSummary}{\code{Simulation$getOptimizationSummary()}}
-\item \href{#method-getExposures}{\code{Simulation$getExposures()}}
-\item \href{#method-getDelistings}{\code{Simulation$getDelistings()}}
-\item \href{#method-getSingleStrategySummaryDf}{\code{Simulation$getSingleStrategySummaryDf()}}
-\item \href{#method-plotPerformance}{\code{Simulation$plotPerformance()}}
-\item \href{#method-plotContribution}{\code{Simulation$plotContribution()}}
-\item \href{#method-plotMarketValue}{\code{Simulation$plotMarketValue()}}
-\item \href{#method-plotCategoryExposure}{\code{Simulation$plotCategoryExposure()}}
-\item \href{#method-plotFactorExposure}{\code{Simulation$plotFactorExposure()}}
-\item \href{#method-plotNumPositions}{\code{Simulation$plotNumPositions()}}
-\item \href{#method-plotTurnover}{\code{Simulation$plotTurnover()}}
-\item \href{#method-plotUniverseSize}{\code{Simulation$plotUniverseSize()}}
-\item \href{#method-plotNonInvestablePct}{\code{Simulation$plotNonInvestablePct()}}
-\item \href{#method-overallStatsDf}{\code{Simulation$overallStatsDf()}}
-\item \href{#method-overallReturnsByMonthDf}{\code{Simulation$overallReturnsByMonthDf()}}
-\item \href{#method-print}{\code{Simulation$print()}}
-\item \href{#method-writeFeather}{\code{Simulation$writeFeather()}}
-\item \href{#method-readFeather}{\code{Simulation$readFeather()}}
-\item \href{#method-getConfig}{\code{Simulation$getConfig()}}
-\item \href{#method-writeReport}{\code{Simulation$writeReport()}}
-\item \href{#method-clone}{\code{Simulation$clone()}}
+\item \href{#method-Simulation-new}{\code{Simulation$new()}}
+\item \href{#method-Simulation-setVerbose}{\code{Simulation$setVerbose()}}
+\item \href{#method-Simulation-setShinyCallback}{\code{Simulation$setShinyCallback()}}
+\item \href{#method-Simulation-getSecurityReference}{\code{Simulation$getSecurityReference()}}
+\item \href{#method-Simulation-run}{\code{Simulation$run()}}
+\item \href{#method-Simulation-getSimDates}{\code{Simulation$getSimDates()}}
+\item \href{#method-Simulation-getSimSummary}{\code{Simulation$getSimSummary()}}
+\item \href{#method-Simulation-getSimDetail}{\code{Simulation$getSimDetail()}}
+\item \href{#method-Simulation-getPositionSummary}{\code{Simulation$getPositionSummary()}}
+\item \href{#method-Simulation-getInputStats}{\code{Simulation$getInputStats()}}
+\item \href{#method-Simulation-getLooseningInfo}{\code{Simulation$getLooseningInfo()}}
+\item \href{#method-Simulation-getOptimizationSummary}{\code{Simulation$getOptimizationSummary()}}
+\item \href{#method-Simulation-getExposures}{\code{Simulation$getExposures()}}
+\item \href{#method-Simulation-getDelistings}{\code{Simulation$getDelistings()}}
+\item \href{#method-Simulation-getSingleStrategySummaryDf}{\code{Simulation$getSingleStrategySummaryDf()}}
+\item \href{#method-Simulation-plotPerformance}{\code{Simulation$plotPerformance()}}
+\item \href{#method-Simulation-plotContribution}{\code{Simulation$plotContribution()}}
+\item \href{#method-Simulation-plotMarketValue}{\code{Simulation$plotMarketValue()}}
+\item \href{#method-Simulation-plotCategoryExposure}{\code{Simulation$plotCategoryExposure()}}
+\item \href{#method-Simulation-plotFactorExposure}{\code{Simulation$plotFactorExposure()}}
+\item \href{#method-Simulation-plotNumPositions}{\code{Simulation$plotNumPositions()}}
+\item \href{#method-Simulation-plotTurnover}{\code{Simulation$plotTurnover()}}
+\item \href{#method-Simulation-plotUniverseSize}{\code{Simulation$plotUniverseSize()}}
+\item \href{#method-Simulation-plotNonInvestablePct}{\code{Simulation$plotNonInvestablePct()}}
+\item \href{#method-Simulation-overallStatsDf}{\code{Simulation$overallStatsDf()}}
+\item \href{#method-Simulation-overallReturnsByMonthDf}{\code{Simulation$overallReturnsByMonthDf()}}
+\item \href{#method-Simulation-print}{\code{Simulation$print()}}
+\item \href{#method-Simulation-writeFeather}{\code{Simulation$writeFeather()}}
+\item \href{#method-Simulation-readFeather}{\code{Simulation$readFeather()}}
+\item \href{#method-Simulation-getConfig}{\code{Simulation$getConfig()}}
+\item \href{#method-Simulation-writeReport}{\code{Simulation$writeReport()}}
+\item \href{#method-Simulation-clone}{\code{Simulation$clone()}}
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-new"></a>}}
-\if{latex}{\out{\hypertarget{method-new}{}}}
+\if{html}{\out{<a id="method-Simulation-new"></a>}}
+\if{latex}{\out{\hypertarget{method-Simulation-new}{}}}
 \subsection{Method \code{new()}}{
 Create a new \code{Simulation} object.
 \subsection{Usage}{
@@ -130,8 +130,8 @@ A new \code{Simulation} object.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-setVerbose"></a>}}
-\if{latex}{\out{\hypertarget{method-setVerbose}{}}}
+\if{html}{\out{<a id="method-Simulation-setVerbose"></a>}}
+\if{latex}{\out{\hypertarget{method-Simulation-setVerbose}{}}}
 \subsection{Method \code{setVerbose()}}{
 Set the verbose flag to control info output.
 \subsection{Usage}{
@@ -150,8 +150,8 @@ No return value, called for side effects.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-setShinyCallback"></a>}}
-\if{latex}{\out{\hypertarget{method-setShinyCallback}{}}}
+\if{html}{\out{<a id="method-Simulation-setShinyCallback"></a>}}
+\if{latex}{\out{\hypertarget{method-Simulation-setShinyCallback}{}}}
 \subsection{Method \code{setShinyCallback()}}{
 Set the callback function for updating progress when running
   a simulation in shiny.
@@ -174,8 +174,8 @@ No return value, called for side effects.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-getSecurityReference"></a>}}
-\if{latex}{\out{\hypertarget{method-getSecurityReference}{}}}
+\if{html}{\out{<a id="method-Simulation-getSecurityReference"></a>}}
+\if{latex}{\out{\hypertarget{method-Simulation-getSecurityReference}{}}}
 \subsection{Method \code{getSecurityReference()}}{
 Get security reference information.
 \subsection{Usage}{
@@ -188,8 +188,8 @@ An object of class \code{data.frame} that contains the security
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-run"></a>}}
-\if{latex}{\out{\hypertarget{method-run}{}}}
+\if{html}{\out{<a id="method-Simulation-run"></a>}}
+\if{latex}{\out{\hypertarget{method-Simulation-run}{}}}
 \subsection{Method \code{run()}}{
 Run the simulation.
 \subsection{Usage}{
@@ -201,8 +201,8 @@ No return value, called for side effects.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-getSimDates"></a>}}
-\if{latex}{\out{\hypertarget{method-getSimDates}{}}}
+\if{html}{\out{<a id="method-Simulation-getSimDates"></a>}}
+\if{latex}{\out{\hypertarget{method-Simulation-getSimDates}{}}}
 \subsection{Method \code{getSimDates()}}{
 Get a list of all date for the simulation.
 \subsection{Usage}{
@@ -215,8 +215,8 @@ weekdays between the 'from' and 'to' dates in the simulation's config.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-getSimSummary"></a>}}
-\if{latex}{\out{\hypertarget{method-getSimSummary}{}}}
+\if{html}{\out{<a id="method-Simulation-getSimSummary"></a>}}
+\if{latex}{\out{\hypertarget{method-Simulation-getSimSummary}{}}}
 \subsection{Method \code{getSimSummary()}}{
 Get summary information.
 \subsection{Usage}{
@@ -291,8 +291,8 @@ An object of class \code{data.frame} that contains summary data
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-getSimDetail"></a>}}
-\if{latex}{\out{\hypertarget{method-getSimDetail}{}}}
+\if{html}{\out{<a id="method-Simulation-getSimDetail"></a>}}
+\if{latex}{\out{\hypertarget{method-Simulation-getSimDetail}{}}}
 \subsection{Method \code{getSimDetail()}}{
 Get detail information.
 \subsection{Usage}{
@@ -411,8 +411,8 @@ An object of class \code{data.frame} that contains security-level
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-getPositionSummary"></a>}}
-\if{latex}{\out{\hypertarget{method-getPositionSummary}{}}}
+\if{html}{\out{<a id="method-Simulation-getPositionSummary"></a>}}
+\if{latex}{\out{\hypertarget{method-Simulation-getPositionSummary}{}}}
 \subsection{Method \code{getPositionSummary()}}{
 Get summary information by security. This method can be
   used, for example, to calculate the biggest winners and losers over the
@@ -457,8 +457,8 @@ An object of class \code{data.frame} that contains summary
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-getInputStats"></a>}}
-\if{latex}{\out{\hypertarget{method-getInputStats}{}}}
+\if{html}{\out{<a id="method-Simulation-getInputStats"></a>}}
+\if{latex}{\out{\hypertarget{method-Simulation-getInputStats}{}}}
 \subsection{Method \code{getInputStats()}}{
 Get input statistics.
 \subsection{Usage}{
@@ -485,8 +485,8 @@ An object of class \code{data.frame} that contains statistics on
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-getLooseningInfo"></a>}}
-\if{latex}{\out{\hypertarget{method-getLooseningInfo}{}}}
+\if{html}{\out{<a id="method-Simulation-getLooseningInfo"></a>}}
+\if{latex}{\out{\hypertarget{method-Simulation-getLooseningInfo}{}}}
 \subsection{Method \code{getLooseningInfo()}}{
 Get loosening information.
 \subsection{Usage}{
@@ -508,8 +508,8 @@ An object of class \code{data.frame} that contains, for each
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-getOptimizationSummary"></a>}}
-\if{latex}{\out{\hypertarget{method-getOptimizationSummary}{}}}
+\if{html}{\out{<a id="method-Simulation-getOptimizationSummary"></a>}}
+\if{latex}{\out{\hypertarget{method-Simulation-getOptimizationSummary}{}}}
 \subsection{Method \code{getOptimizationSummary()}}{
 Get optimization summary information.
 \subsection{Usage}{
@@ -542,8 +542,8 @@ An object of class \code{data.frame} that contains optimization
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-getExposures"></a>}}
-\if{latex}{\out{\hypertarget{method-getExposures}{}}}
+\if{html}{\out{<a id="method-Simulation-getExposures"></a>}}
+\if{latex}{\out{\hypertarget{method-Simulation-getExposures}{}}}
 \subsection{Method \code{getExposures()}}{
 Get end-of-period exposure information.
 \subsection{Usage}{
@@ -576,8 +576,8 @@ An object of class \code{data.frame} that contains end-of-period
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-getDelistings"></a>}}
-\if{latex}{\out{\hypertarget{method-getDelistings}{}}}
+\if{html}{\out{<a id="method-Simulation-getDelistings"></a>}}
+\if{latex}{\out{\hypertarget{method-Simulation-getDelistings}{}}}
 \subsection{Method \code{getDelistings()}}{
 Get information on positions removed due to delisting.
 \subsection{Usage}{
@@ -592,8 +592,8 @@ An object of class \code{data.frame} that contains a row for each
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-getSingleStrategySummaryDf"></a>}}
-\if{latex}{\out{\hypertarget{method-getSingleStrategySummaryDf}{}}}
+\if{html}{\out{<a id="method-Simulation-getSingleStrategySummaryDf"></a>}}
+\if{latex}{\out{\hypertarget{method-Simulation-getSingleStrategySummaryDf}{}}}
 \subsection{Method \code{getSingleStrategySummaryDf()}}{
 Get summary information for a single strategy suitable for
   plotting input.
@@ -621,8 +621,8 @@ A data frame that contains summary information for the desired
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-plotPerformance"></a>}}
-\if{latex}{\out{\hypertarget{method-plotPerformance}{}}}
+\if{html}{\out{<a id="method-Simulation-plotPerformance"></a>}}
+\if{latex}{\out{\hypertarget{method-Simulation-plotPerformance}{}}}
 \subsection{Method \code{plotPerformance()}}{
 Draw a plot of cumulative gross and net return by date.
 \subsection{Usage}{
@@ -639,8 +639,8 @@ for the plot. Defaults to \code{"joint"}.}
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-plotContribution"></a>}}
-\if{latex}{\out{\hypertarget{method-plotContribution}{}}}
+\if{html}{\out{<a id="method-Simulation-plotContribution"></a>}}
+\if{latex}{\out{\hypertarget{method-Simulation-plotContribution}{}}}
 \subsection{Method \code{plotContribution()}}{
 Draw a plot of contribution to net return on GMV for levels
   of a specified category.
@@ -663,8 +663,8 @@ for the plot. Defaults to \code{"joint"}.}
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-plotMarketValue"></a>}}
-\if{latex}{\out{\hypertarget{method-plotMarketValue}{}}}
+\if{html}{\out{<a id="method-Simulation-plotMarketValue"></a>}}
+\if{latex}{\out{\hypertarget{method-Simulation-plotMarketValue}{}}}
 \subsection{Method \code{plotMarketValue()}}{
 Draw a plot of total gross, long, short, and net market
   value by date.
@@ -682,8 +682,8 @@ for the plot. Defaults to \code{"joint"}.}
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-plotCategoryExposure"></a>}}
-\if{latex}{\out{\hypertarget{method-plotCategoryExposure}{}}}
+\if{html}{\out{<a id="method-Simulation-plotCategoryExposure"></a>}}
+\if{latex}{\out{\hypertarget{method-Simulation-plotCategoryExposure}{}}}
 \subsection{Method \code{plotCategoryExposure()}}{
 Draw a plot of exposure to all levels in a category by date.
 \subsection{Usage}{
@@ -705,8 +705,8 @@ for the plot. Defaults to \code{"joint"}.}
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-plotFactorExposure"></a>}}
-\if{latex}{\out{\hypertarget{method-plotFactorExposure}{}}}
+\if{html}{\out{<a id="method-Simulation-plotFactorExposure"></a>}}
+\if{latex}{\out{\hypertarget{method-Simulation-plotFactorExposure}{}}}
 \subsection{Method \code{plotFactorExposure()}}{
 Draw a plot of exposure to factors by date.
 \subsection{Usage}{
@@ -725,8 +725,8 @@ for the plot. Defaults to \code{"joint"}.}
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-plotNumPositions"></a>}}
-\if{latex}{\out{\hypertarget{method-plotNumPositions}{}}}
+\if{html}{\out{<a id="method-Simulation-plotNumPositions"></a>}}
+\if{latex}{\out{\hypertarget{method-Simulation-plotNumPositions}{}}}
 \subsection{Method \code{plotNumPositions()}}{
 Draw a plot of number of long and short positions by date.
 \subsection{Usage}{
@@ -743,8 +743,8 @@ for the plot. Defaults to \code{"joint"}.}
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-plotTurnover"></a>}}
-\if{latex}{\out{\hypertarget{method-plotTurnover}{}}}
+\if{html}{\out{<a id="method-Simulation-plotTurnover"></a>}}
+\if{latex}{\out{\hypertarget{method-Simulation-plotTurnover}{}}}
 \subsection{Method \code{plotTurnover()}}{
 Draw a plot of number of long and short positions by date.
 \subsection{Usage}{
@@ -761,8 +761,8 @@ for the plot. Defaults to \code{"joint"}.}
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-plotUniverseSize"></a>}}
-\if{latex}{\out{\hypertarget{method-plotUniverseSize}{}}}
+\if{html}{\out{<a id="method-Simulation-plotUniverseSize"></a>}}
+\if{latex}{\out{\hypertarget{method-Simulation-plotUniverseSize}{}}}
 \subsection{Method \code{plotUniverseSize()}}{
 Draw a plot of the universe size, or number of investable
   stocks, over time.
@@ -780,8 +780,8 @@ for the plot. Defaults to \code{joint}.}
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-plotNonInvestablePct"></a>}}
-\if{latex}{\out{\hypertarget{method-plotNonInvestablePct}{}}}
+\if{html}{\out{<a id="method-Simulation-plotNonInvestablePct"></a>}}
+\if{latex}{\out{\hypertarget{method-Simulation-plotNonInvestablePct}{}}}
 \subsection{Method \code{plotNonInvestablePct()}}{
 Draw a plot of the percentage of portfolio GMV held in
   non-investable stocks (e.g., stocks that do not satisfy universe criteria)
@@ -800,8 +800,8 @@ for the plot. Defaults to \code{"joint"}.}
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-overallStatsDf"></a>}}
-\if{latex}{\out{\hypertarget{method-overallStatsDf}{}}}
+\if{html}{\out{<a id="method-Simulation-overallStatsDf"></a>}}
+\if{latex}{\out{\hypertarget{method-Simulation-overallStatsDf}{}}}
 \subsection{Method \code{overallStatsDf()}}{
 Calculate overall simulation summary statistics, such as
   total P&L, Sharpe, average market values and counts, etc.
@@ -815,8 +815,8 @@ A data frame that contains summary statistics, suitable for
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-overallReturnsByMonthDf"></a>}}
-\if{latex}{\out{\hypertarget{method-overallReturnsByMonthDf}{}}}
+\if{html}{\out{<a id="method-Simulation-overallReturnsByMonthDf"></a>}}
+\if{latex}{\out{\hypertarget{method-Simulation-overallReturnsByMonthDf}{}}}
 \subsection{Method \code{overallReturnsByMonthDf()}}{
 Calculate return for each month and summary statistics for
   each year, such as total return and annualized Sharpe. Return in data
@@ -838,8 +838,8 @@ The data frame contains one row for each calendar year in the
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-print"></a>}}
-\if{latex}{\out{\hypertarget{method-print}{}}}
+\if{html}{\out{<a id="method-Simulation-print"></a>}}
+\if{latex}{\out{\hypertarget{method-Simulation-print}{}}}
 \subsection{Method \code{print()}}{
 Print overall simulation statistics.
 \subsection{Usage}{
@@ -848,8 +848,8 @@ Print overall simulation statistics.
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-writeFeather"></a>}}
-\if{latex}{\out{\hypertarget{method-writeFeather}{}}}
+\if{html}{\out{<a id="method-Simulation-writeFeather"></a>}}
+\if{latex}{\out{\hypertarget{method-Simulation-writeFeather}{}}}
 \subsection{Method \code{writeFeather()}}{
 Write the data in the object to feather files.
 \subsection{Usage}{
@@ -868,8 +868,8 @@ No return value, called for side effects.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-readFeather"></a>}}
-\if{latex}{\out{\hypertarget{method-readFeather}{}}}
+\if{html}{\out{<a id="method-Simulation-readFeather"></a>}}
+\if{latex}{\out{\hypertarget{method-Simulation-readFeather}{}}}
 \subsection{Method \code{readFeather()}}{
 Load files created with \code{writeFeather} into the object.
   Note that because detail data is not re-split by period, it will not be
@@ -891,8 +891,8 @@ No return value, called for side effects.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-getConfig"></a>}}
-\if{latex}{\out{\hypertarget{method-getConfig}{}}}
+\if{html}{\out{<a id="method-Simulation-getConfig"></a>}}
+\if{latex}{\out{\hypertarget{method-Simulation-getConfig}{}}}
 \subsection{Method \code{getConfig()}}{
 Get the object's configuration information.
 \subsection{Usage}{
@@ -905,8 +905,8 @@ Object of class \code{list} that contains the simulation's
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-writeReport"></a>}}
-\if{latex}{\out{\hypertarget{method-writeReport}{}}}
+\if{html}{\out{<a id="method-Simulation-writeReport"></a>}}
+\if{latex}{\out{\hypertarget{method-Simulation-writeReport}{}}}
 \subsection{Method \code{writeReport()}}{
 Write an html document of simulation results.
 \subsection{Usage}{
@@ -938,8 +938,8 @@ report about.}
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-clone"></a>}}
-\if{latex}{\out{\hypertarget{method-clone}{}}}
+\if{html}{\out{<a id="method-Simulation-clone"></a>}}
+\if{latex}{\out{\hypertarget{method-Simulation-clone}{}}}
 \subsection{Method \code{clone()}}{
 The objects of this class are cloneable with this method.
 \subsection{Usage}{

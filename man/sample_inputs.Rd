@@ -30,7 +30,7 @@ A dataset containing sample security input data for 492 securities and 65
 weekdays, from 2020-06-01 to 2020-08-31. Data items include average trading
 dollar volume, market cap, and normalized size and value factors. The pricing
 data used to construct the dataset was downloaded using the
-\href{https://api.tiingo.com/}{Tiingo Stock API} and is used with permission.
+Tiingo Stock API and is used with permission.
 Fundamental data items were downloaded from EDGAR.
 }
 \details{

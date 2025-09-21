@@ -1,4 +1,4 @@
-## ---- echo = FALSE, message = FALSE-------------------------------------------
+## ----echo = FALSE, message = FALSE--------------------------------------------
 
 # output: pdf_document
 
@@ -13,7 +13,7 @@ overall_stats <- list()
 
 options(tibble.print_min = 4L, tibble.print_max = 4L, tibble.width = Inf, dplyr.summarise.inform = FALSE)
 
-## ---- message = FALSE---------------------------------------------------------
+## ----message = FALSE----------------------------------------------------------
 library(strand)
 library(dplyr)
 
